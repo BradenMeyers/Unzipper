@@ -46,6 +46,7 @@ byte buzzer = 27;
 byte motorDirection = 22;
 byte motor = 21;
 byte handleBarSensor = 14;
+byte odometerLed = 19;
 
 //bool atTheTop = false;
 bool someonOnStateChanged = false;
@@ -57,8 +58,6 @@ Timer readyTimeOutTimer;
 Timer stallTimer;
 Timer handleBarTimer;
 Timer odometerTimer;
-
-byte odometerLed = 19;
 
 unsigned long rotations = 0;
 unsigned long beforeRotations;
@@ -270,7 +269,6 @@ void updateVariableStrings(){
 }
 
 void setup(){
-  delay(3000);
   serverSetup();
   Serial.begin(112500);
   analogReadResolution(12);
@@ -281,18 +279,16 @@ void setup(){
   pinMode(motorDirection, OUTPUT);
   pinMode(motor, OUTPUT);
   digitalWrite(motor, LOW);
-  digitalWrite(motorDirection, HIGH);
   ledcSetup(motorChannel, freq, resolution);
   ledcAttachPin(motor, motorChannel);
   ledcWrite(motorChannel, 0);
-
 }
 
 void loop(){
   updateVariableStrings();
   mainlog.log("Current state : ");
   mainlog.log(stateStr, true);
-  batteryVoltage();
+  serverLoop();
 
   if(state == READY){readyAtTheTop();}
   else if(state == ZIPPING){movingDown();}

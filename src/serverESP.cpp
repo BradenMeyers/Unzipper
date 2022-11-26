@@ -4,6 +4,9 @@
 #include <ESPAsyncWebServer.h>
 #include <serverESP.h>
 #include <constants.h>
+#include <timer.h>
+
+Timer batterycheck;
 
 const char* ssid = "Zip-Line-Controls";
 const char* password = "123456789";
@@ -41,8 +44,6 @@ float batteryVoltage(){
     voltage = voltage*alpha + (1-alpha)*reading;
     return voltage;
 }
-
-
 
 // Replaces placeholder with button section in your web page
 String processor(const String& var){
@@ -147,8 +148,12 @@ void serverSetup(){
         request->send(200, "text/plain", "OK");
     });
     pinMode(batteryMonitor, INPUT);
+    batterycheck.start();
 }
 
 void serverLoop(){
-
+    if(batterycheck.getTime() > 5000){
+        batteryVoltage();
+        batterycheck.start();
+    }
 }
