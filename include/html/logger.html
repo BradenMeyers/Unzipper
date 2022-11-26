@@ -1,0 +1,28 @@
+<!DOCTYPE HTML><html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zip Line Controls</title>
+  <style>
+    html {font-family: Arial; display: inline-block; text-align: center;}
+    h2 {font-size: 1.4rem;}
+    p {font-size: 1rem;}
+    body {max-width: 400px; margin:0px auto; padding-bottom: 25px;}
+    .clear_button{background-color: #c76f12; border: none; color: black; padding: 16px 40px;}
+    .back_button{background-color: #2aa2d1; border: none; color: black; padding: 16px 40px;}
+  </style>
+</head>
+<body>
+  <h2>Log</h2>
+  <p><button id="clear_button" class="button clear_button" onclick="buttonClickSend(this);">Clear Log</button></p>
+  <p><button id="back_button" class="button back_button" onclick="location.href = '/back';">Back</button></p>
+  %LOGSTRING%
+<script>
+function buttonClickSend(element){
+  var xhr = new XMLHttpRequest();
+  if(element.id == "back_button"){xhr.open("GET", "/back");}
+  else if(element.id == "clear_button"){xhr.open("GET", "/clearlog")}
+  xhr.send();
+}
+</script>
+</body>
+</html>
