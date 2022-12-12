@@ -3,20 +3,25 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <serverESP.h>
+Logger logger;
 #include <constants.h>
+#include <Preferences.h>
+Preferences preferences;
 #include <timer.h>
-
 Timer batterycheck;
 
 const char* ssid = "Zip-Line-Controls";
 const char* password = "123456789";
 
-byte state = READY;
+int serverState = 0;    //0 do nothing, 1 start, 2 end
 
+byte batteryMonitor = 34;
 byte odometerSensor = 33;
+
+byte state = READY;
 int odometerSensorValue = 0;
-byte motorsMaxSpeed = 200;
-unsigned long afterZipDelay = 7000;
+int motorsMaxSpeed = 200;
+int afterZipDelay = 7;
 
 int highThreshold = 3000;
 String highThresholdStr = String(highThreshold);
@@ -26,16 +31,13 @@ String lowThresholdStr = String(lowThreshold);
 String stateStr = "Ready";
 String directionStr = "UP";
 String motorMaxSpeedStr = String(motorsMaxSpeed);
-String afterZipDelayStr = String(afterZipDelay * 0.001);  //cause actual variable is in miliseconds but wifi is in seconds
+String afterZipDelayStr = String(afterZipDelay);  //cause actual variable is in miliseconds but wifi is in seconds
 
 bool wifiStopMotor = false;
 bool wifiSkipToRecovery = false;
 
-Logger logger;
-
 AsyncWebServer server(80);
 
-byte batteryMonitor = 34;
 float batteryVoltage(){
     float reading = analogRead(batteryMonitor);
     reading = ((reading)/(4095)) * 19.68;
@@ -60,8 +62,24 @@ String processor(const String& var){
   return String();
 }
 
+void storeValues(){
+    preferences.putUInt("lower", lowThreshold);
+    preferences.putUInt("upper", highThreshold);
+    preferences.putUInt("max", motorsMaxSpeed);
+    preferences.putUInt("zDelay", afterZipDelay);
+}
 
 void serverSetup(){
+    preferences.begin("my-app", false);
+    motorsMaxSpeed = preferences.getUInt("max", 195);     //max speed
+    highThreshold = preferences.getUInt("upper", 2500); //Upper IR Threshold
+    lowThreshold = preferences.getUInt("lower", 1000); //Lower IR threshold
+    afterZipDelay = preferences.getUInt("zDelay", 1000);  //Delay after the zipping state
+    motorMaxSpeedStr = String(motorsMaxSpeed);
+    afterZipDelayStr = String(afterZipDelay);
+    lowThresholdStr = String(lowThreshold);
+    highThresholdStr = String(highThreshold);
+    WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(ssid, password);
     server.begin();
     delay(3000);
@@ -85,7 +103,7 @@ void serverSetup(){
         // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
         if (request->hasParam("value")) {
         afterZipDelayStr = request->getParam("value")->value();
-        afterZipDelay = afterZipDelayStr.toInt() * 1000;
+        afterZipDelay = afterZipDelayStr.toInt();
         logger.log("After zip delay is now: ");
         logger.log(afterZipDelayStr, true);
         }
@@ -153,7 +171,8 @@ void serverSetup(){
 
 void serverLoop(){
     if(batterycheck.getTime() > 5000){
-        batteryVoltage();
+        float volts = batteryVoltage();
         batterycheck.start();
+        storeValues();
     }
 }

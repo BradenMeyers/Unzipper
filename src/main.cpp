@@ -2,15 +2,30 @@
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <remote.h>
 #include <serverESP.h>
+Logger mainlog;
 #include <timer.h>
+Timer recoveryTimer;
+Timer atTheTopTimer;
+Timer readyTimeOutTimer;
+Timer stallTimer;
+Timer handleBarTimer;
+Timer odometerTimer;
+
+byte buzzer = 27;
+byte motorDirection = 22;
+byte motor = 21;
+byte handleBarSensor = 14;
+byte odometerLed = 19;
+
 
 #define motorChannel 0
 #define resolution 8
 #define freq 5000
 #define RECOVERY_TO_READY_AFTER_BEEN_GRABBED_TIME 1700
 
-Logger mainlog;
+
 
 void ledStateMachine(){
   static byte readyLight = 25;
@@ -42,34 +57,19 @@ void ledStateMachine(){
   }
 }
 
-byte buzzer = 27;
-byte motorDirection = 22;
-byte motor = 21;
-byte handleBarSensor = 14;
-byte odometerLed = 19;
-
 //bool atTheTop = false;
-bool someonOnStateChanged = false;
-unsigned long stallRotationCount;
+//bool someonOnStateChanged = false;
 
-Timer recoveryTimer;
-Timer atTheTopTimer;
-Timer readyTimeOutTimer;
-Timer stallTimer;
-Timer handleBarTimer;
-Timer odometerTimer;
 
 unsigned long rotations = 0;
 unsigned long beforeRotations;
 unsigned long countToTopLimit;
 unsigned long countToTopLimitOffset = 20;
-bool crossedThreshold = false;
+
 bool shouldCheckAtTheTop = true;
 
-String currentIrStr;
-
-
 void countRotations(){
+  static bool crossedThreshold = false;
   for(int times=0; times<=4; times++){
   odometerSensorValue = analogRead(odometerSensor);
   if(odometerSensorValue > highThreshold and not crossedThreshold){
@@ -101,6 +101,7 @@ void stopCount(){
 }
 
 bool isAtTheTop(){
+  
   if(shouldCheckAtTheTop){
     if(rotations > countToTopLimit){return true;}
   }
@@ -108,23 +109,30 @@ bool isAtTheTop(){
 }
 
 bool isStalled(){
+  static unsigned long stallRotationCount;
   // If there have been no rotations in less than 160 milliseconds will return true, otherwise false
-  if(not stallTimer.started){
-    stallTimer.start();
-    stallTimer.started = true;
-    stallRotationCount = rotations;
+  if(stall){  
+    if(not stallTimer.started){
+      stallTimer.start();
+      stallTimer.started = true;
+      stallRotationCount = rotations;
+      return false;
+    }
+    else if(stallTimer.getTime() > 160){
+      stallTimer.started = false;
+      if(rotations - stallRotationCount < 1){
+        return true;
+      }
+    }
     return false;
   }
-  else if(stallTimer.getTime() > 160){
-    stallTimer.started = false;
-    if(rotations - stallRotationCount < 1){
-      return true;
-    }
-  }
-  return false;
+  else
+    return false;
 }
 
 bool someoneOn(int timeLimit){
+  serverLoop();
+  remoteLoop();
   static byte handleBarSensorValue = 0;
   if(digitalRead(handleBarSensor) != handleBarSensorValue){
     if(handleBarTimer.getTime() > timeLimit){
@@ -198,7 +206,7 @@ void moveToTop(){
   digitalWrite(buzzer, HIGH);
   //atTheTop = false;
   recoveryTimer.start();
-  while(recoveryTimer.getTime() < afterZipDelay){
+  while(recoveryTimer.getTime() < afterZipDelay*1000){
     if(wifiStopMotor){
       wifiStopMotor = false;
       stopTheMotor();
@@ -282,15 +290,16 @@ void setup(){
   ledcSetup(motorChannel, freq, resolution);
   ledcAttachPin(motor, motorChannel);
   ledcWrite(motorChannel, 0);
+  remoteSetup();
 }
 
 void loop(){
   updateVariableStrings();
   mainlog.log("Current state : ");
   mainlog.log(stateStr, true);
-  serverLoop();
-
   if(state == READY){readyAtTheTop();}
   else if(state == ZIPPING){movingDown();}
   else if(state == RECOVERY){moveToTop();}
 }
+
+

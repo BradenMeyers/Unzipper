@@ -8,24 +8,24 @@
 #define RECOVERY 3
 
 extern byte state;
+extern String stateStr;
+extern int serverState;
 
 extern byte odometerSensor;
 extern int odometerSensorValue;
-extern byte motorsMaxSpeed;
-extern unsigned long afterZipDelay;
+
+extern int motorsMaxSpeed;
+extern String motorMaxSpeedStr;
+extern int afterZipDelay;
+extern String afterZipDelayStr;  //cause actual variable is in miliseconds but wifi is in seconds
+extern String directionStr;
+extern bool wifiStopMotor;
+extern bool wifiSkipToRecovery;
 
 extern int highThreshold;
 extern String highThresholdStr;
 extern int lowThreshold;
 extern String lowThresholdStr;
-
-extern String stateStr;
-extern String directionStr;
-extern String motorMaxSpeedStr;
-extern String afterZipDelayStr;  //cause actual variable is in miliseconds but wifi is in seconds
-
-extern bool wifiStopMotor;
-extern bool wifiSkipToRecovery;
 
 void serverSetup();
 
