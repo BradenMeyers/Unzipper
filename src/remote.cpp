@@ -27,7 +27,7 @@ typedef struct send_message {
 send_message outgoing;
 test_struct incoming;
 
-uint8_t broadcastAddress[] = {0x30, 0xC6, 0xF7, 0x20, 0x3F, 0x18};
+uint8_t broadcastAddress[] = {0x7C, 0x9E, 0xBD, 0x37, 0xE2, 0xA0};
 
 String success;
 esp_now_peer_info_t peerInfo;

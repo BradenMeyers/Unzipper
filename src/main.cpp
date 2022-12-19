@@ -126,8 +126,10 @@ bool isStalled(){
     }
     return false;
   }
-  else
+  else{
+    mainlog.log("Stall turned off", true);
     return false;
+  }
 }
 
 bool someoneOn(int timeLimit){
@@ -246,6 +248,10 @@ void moveToTop(){
   mainlog.log("Motor has reached max speed", true);
   while(true){
     countRotations();
+    if(half){
+      turnOnMotor(motorsMaxSpeed/2);
+      mainlog.log("half speed activated from remote", true);
+    }
     if(someoneOn(50)){
       mainlog.log(someoneOnLog, true);
       break;
