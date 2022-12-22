@@ -6,6 +6,8 @@
 #include <serverESP.h>
 
 Timer sendData;
+Timer dataRecTimer;
+Timer racecarTimer;
 //Structure example to receive data
 //Must match the sender structure
 typedef struct test_struct {
@@ -16,16 +18,27 @@ typedef struct test_struct {
   int stop;
   int go;
   int half;
+  int beep;
 } test_struct;
+test_struct incoming;
 
 typedef struct send_message {
   int dir;    //1 down  and 0 Up 
   int max;
   int zipDelay;
 } send_message;
-
 send_message outgoing;
-test_struct incoming;
+
+typedef struct single_int{
+  int connect;
+} single_int;
+single_int connect_request;
+
+typedef struct racecarStruct{
+  int dir;
+  int speed;
+} racecarStruct;
+racecarStruct racecarData;
 
 uint8_t broadcastAddress[] = {0x7C, 0x9E, 0xBD, 0x37, 0xE2, 0xA0};
 
@@ -34,6 +47,9 @@ esp_now_peer_info_t peerInfo;
 static bool sentFirstMessage = false;
 int stall = 1;
 int half = 0; //0 is not pressed 1 is pressed.
+int beep = 0; // 0 turn off beeper, 1 turn on beeper
+bool racecarMode = false;
+int racecarSpeed = 0;
 
 void updateOutgoing(){
   if(directionStr == "DOWN")
@@ -46,37 +62,66 @@ void updateOutgoing(){
 
 //callback function that will be executed when data is received
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  memcpy(&incoming, incomingData, sizeof(incoming));
+  dataRecTimer.start();
   Serial.print("Bytes received: ");
   Serial.println(len);
-  Serial.print("Direction: ");
-  Serial.println(incoming.dir);
-  Serial.print("Delay: ");
-  Serial.println(incoming.zipDelay);
-  Serial.print("Max Speed: ");
-  Serial.println(incoming.max);
-  Serial.print("Stall: ");
-  Serial.println(incoming.stall);
-  Serial.print("Stop: ");
-  Serial.println(incoming.stop);
-  Serial.print("go: ");
-  Serial.println(incoming.go);
-  Serial.print("Half: ");
-  Serial.println(incoming.half);
-  Serial.println();
-  
-  motorsMaxSpeed = incoming.max;
-  motorMaxSpeedStr = String(motorsMaxSpeed);
-  afterZipDelay = incoming.zipDelay;
-  afterZipDelayStr = String(afterZipDelay);
-  wifiStopMotor = incoming.stop;
-  wifiSkipToRecovery = incoming.go;
-  stall = incoming.stall;
-  if(incoming.dir == 1)
-    directionStr = "DOWN";
+  if(len < 6){
+    memcpy(&connect_request, incomingData, sizeof(connect_request));
+    sentFirstMessage = false;
+  }
+  if(len > 6 && len < 20){
+    Serial.println("i am here 1");
+    memcpy(&racecarData, incomingData, sizeof(racecarData));
+    racecarMode = true;
+    racecarTimer.start();
+    if(state == READY){
+      Serial.println("I am here");
+      racecarSpeed = racecarData.speed;
+      Serial.println(racecarSpeed);
+      if(racecarData.dir == 1)
+        directionStr = "DOWN";
+      else
+        directionStr = "UP";
+      Serial.println(directionStr);
+    }
+  }
   else
-    directionStr = "UP";
-  updateOutgoing();
+    racecarMode = false;    //when the remote leaves racecar mode data will be sent that is not 8 bytes
+
+  if(len > 25 ){
+    memcpy(&incoming, incomingData, sizeof(incoming));
+    Serial.print("Direction: ");
+    Serial.println(incoming.dir);
+    Serial.print("Delay: ");
+    Serial.println(incoming.zipDelay);
+    Serial.print("Max Speed: ");
+    Serial.println(incoming.max);
+    Serial.print("Stall: ");
+    Serial.println(incoming.stall);
+    Serial.print("Stop: ");
+    Serial.println(incoming.stop);
+    Serial.print("go: ");
+    Serial.println(incoming.go);
+    Serial.print("Half: ");
+    Serial.println(incoming.half);
+    Serial.print("Beep: ");
+    Serial.println(incoming.beep);
+    Serial.println();
+    motorsMaxSpeed = incoming.max;
+    motorMaxSpeedStr = String(motorsMaxSpeed);
+    afterZipDelay = incoming.zipDelay;
+    afterZipDelayStr = String(afterZipDelay);
+    wifiStopMotor = incoming.stop;
+    wifiSkipToRecovery = incoming.go;
+    half = incoming.half;
+    beep = incoming.beep;
+    stall = incoming.stall;
+    if(incoming.dir == 1)
+      directionStr = "DOWN";
+    else
+      directionStr = "UP";
+    updateOutgoing();
+  }
 }
 
 
@@ -132,7 +177,8 @@ void remoteSetup() {
 }
  
 void remoteLoop() {
-  compareMessages();
+  if(dataRecTimer.getTime() > 500)    //dont check if the messages are different until data is recieved, it runs the compare too fast
+    compareMessages();
   if(sendData.getTime() > 500 && !sentFirstMessage){
     updateOutgoing();
     esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &outgoing, sizeof(outgoing));
@@ -143,5 +189,8 @@ void remoteLoop() {
       Serial.println("Error sending the data");
     }
     sendData.start();
+  }
+  if(racecarTimer.getTime() > 500){
+    racecarMode = false;
   }
 }

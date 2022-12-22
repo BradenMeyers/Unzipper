@@ -158,7 +158,7 @@ void turnOnMotor(int speed){
     mainlog.log("motor speed increase due to low battery voltage", true);
   } */
   if(speed == 0){
-    mainlog.log("MOTOR IS OFF------------------", true);
+    //mainlog.log("MOTOR IS OFF------------------", true);
   }
 }
 
@@ -172,6 +172,16 @@ void readyAtTheTop(){
       mainlog.log("Going up the zip line because ready timed out.", true);
       return;
     }
+    while(racecarMode){
+      turnOnMotor(racecarSpeed);
+      remoteLoop();
+      serverLoop();
+    }
+    turnOnMotor(0);
+    if(beep == 1)
+      digitalWrite(buzzer, HIGH);
+    else
+      digitalWrite(buzzer, LOW);
   }
   state = ZIPPING;
 }
@@ -180,6 +190,10 @@ void movingDown(){
   startCount();
   while(someoneOn(1000)){
     countRotations();
+    if(beep == 1)
+      digitalWrite(buzzer, HIGH);
+    else
+      digitalWrite(buzzer, LOW);
   }
   stopCount();
   mainlog.log("Total Rotations that were zipped: ");
