@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <SPI.h>
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -69,19 +71,19 @@ unsigned long countToTopLimitOffset = 20;
 
 bool shouldCheckAtTheTop = true;
 
-void countRotations(){
-  static bool crossedThreshold = false;
-  for(int times=0; times<=4; times++){
-  odometerSensorValue = analogRead(odometerSensor);
-  if(odometerSensorValue > highThreshold and not crossedThreshold){
-    //mainlog.logln(rotations);
-    rotations++;
-    crossedThreshold = true;
-    Serial.println(rotations);
-  }
-  else if(odometerSensorValue < lowThreshold){crossedThreshold = false;}
-  }
-}
+// void countRotations(){
+//   static bool crossedThreshold = false;
+//   for(int times=0; times<=4; times++){
+//   odometerSensorValue = analogRead(odometerSensor);
+//   if(odometerSensorValue > highThreshold and not crossedThreshold){
+//     //mainlog.logln(rotations);
+//     rotations++;
+//     crossedThreshold = true;
+//     Serial.println(rotations);
+//   }
+//   else if(odometerSensorValue < lowThreshold){crossedThreshold = false;}
+//   }
+// }
 
 void countRotationsHallEffect(){
   static int magneticValue = digitalRead(odometerHallEffect);
@@ -127,7 +129,7 @@ bool isStalled(){
     }
     else if(stallTimer.getTime() > 160){
       stallTimer.started = false;
-      if(rotations - stallRotationCount < 1){
+      if(rotations - stallRotationCount < 2){
         return true;
       }
     }
@@ -352,23 +354,6 @@ void loop(){
   if(state == READY){readyAtTheTop();}
   else if(state == ZIPPING){movingDown();}
   else if(state == RECOVERY){moveToTop();}
-}
-
-void loopp(){
-  delay(1000);
-  digitalWrite(25, HIGH);
-  Serial.println("I am here1");
-  delay(1000);
-  digitalWrite(25, LOW);
-  digitalWrite(32, HIGH);
-  Serial.println("I am here2");
-  delay(1000);
-  digitalWrite(32, LOW);
-  digitalWrite(23, HIGH);
-  Serial.println("I am here3");
-  delay(1000);
-  digitalWrite(23, LOW);
-  
 }
 
 

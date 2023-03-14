@@ -2,6 +2,7 @@
 #define SERVERESP
 
 #include <Arduino.h>
+#include <string>
 
 #define READY 1
 #define ZIPPING 2
@@ -36,43 +37,46 @@ public:
   String(logStr) = "";
   String newLine = "<br>";
   void log(const char* message, bool ln=false){
-    logStr += message;
-    Serial.print(message);
     if(ln){
       logNewLine();
     }
+    logStr = message + logStr;
+    Serial.print(message);
   }
   void log(String string, bool ln=false){
-    logStr += string;
-    Serial.print(string);
     if(ln){
       logNewLine();
     }
+    logStr = string + logStr;
+    Serial.print(string);
   }
   void log(int i, bool ln=false){
-    logStr += String(i);
-    Serial.print(i);
     if(ln){
       logNewLine();
     }
+    logStr = String(i) + logStr;
+    Serial.print(i);
   }
   void log(unsigned long l, bool ln=false){
-    logStr += String(l);
     Serial.print(l);
     if(ln){
       logNewLine();
     }
+    logStr = String(l) + logStr;
   }
   void logNewLine(){
-    logStr += " - ";
-    logStr += millis() * 0.001;
-    logStr += newLine;
     Serial.println();
+    logStr = newLine + logStr;
+    logStr = millis() * 0.001 + logStr;
+    logStr = " - " + logStr;
   }
   void checkLogLength(){
     if(logStr.length() > 1100){
       logStr = logStr.substring(100);
     }
+  }
+  void clearLog(){
+    logStr = "";
   }
 };
 

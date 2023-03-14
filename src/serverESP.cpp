@@ -60,7 +60,7 @@ String processor(const String& var){
   else if(var == "LOWTHRESHOLD"){return lowThresholdStr;}
   else if(var == "HIGHTHRESHOLD"){return highThresholdStr;}
   else if(var == "VOLTAGE") return String(batteryVoltage());
-  //else if(var == "LOGSTRING"){return logger.logStr;}
+  else if(var == "LOGSTRING"){return logger.logStr;}
   return String();
 }
 
@@ -95,7 +95,7 @@ void serverSetup(){
     delay(3000);
 
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send_P(SPIFFS, "text/html", "/index.html", processor);
+        request->send(SPIFFS, "/index.html", String(), false, processor);
     });
 
     server.on("/maxspeed", HTTP_GET, [] (AsyncWebServerRequest *request){
@@ -103,8 +103,8 @@ void serverSetup(){
         if (request->hasParam("value")) {
         motorMaxSpeedStr = request->getParam("value")->value();
         motorsMaxSpeed = motorMaxSpeedStr.toInt();
-        logger.log("Max speed in now: ");
         logger.log(motorMaxSpeedStr, true);
+        logger.log("Max speed in now: ");
         }
         request->send(200, "text/plain", "OK");
     });
@@ -114,15 +114,16 @@ void serverSetup(){
         if (request->hasParam("value")) {
         afterZipDelayStr = request->getParam("value")->value();
         afterZipDelay = afterZipDelayStr.toInt();
-        logger.log("After zip delay is now: ");
         logger.log(afterZipDelayStr, true);
+        logger.log("After zip delay is now: ");
         }
         request->send(200, "text/plain", "OK");
     });
 
     server.on("/stopclick", HTTP_GET, [](AsyncWebServerRequest *request){
         if(state == RECOVERY){wifiStopMotor = true;}
-        request->send_P(200, "text/html", index_html, processor);
+        Serial.println("stop Button clicked");
+        request->send(SPIFFS, "/index.html", String(), false, processor);
     });
 
     server.on("/directionclick", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -130,38 +131,39 @@ void serverSetup(){
           directionStr = "DOWN";
         else   
           directionStr = "UP";
-        request->send_P(200, "text/html", index_html, processor);
+        request->send(SPIFFS, "/index.html", String(), false, processor);
     });
 
     server.on("/goupclick", HTTP_GET, [](AsyncWebServerRequest *request){
         if(state == READY){wifiSkipToRecovery = true;}
-        request->send_P(200, "text/html", index_html, processor);
+        Serial.println("go Button clicked");
+        request->send(SPIFFS, "/index.html", String(), false, processor);
     });
 
     server.on("/odometersettingsclick", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send_P(200, "text/html", odometer_index_html, processor);
+        request->send(SPIFFS, "/odometer.html", String(), false, processor);
     });
 
     server.on("/back", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send_P(200, "text/html", index_html, processor);
+        request->send(SPIFFS, "/index.html", String(), false, processor);
     });
 
     server.on("/logclick", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send_P(200, "text/html", log_page_index_html, processor);
+        request->send(SPIFFS, "/logger.html", String(), false, processor);
     });
 
     server.on("/clearlog", HTTP_GET, [](AsyncWebServerRequest *request){
-        //logger.logStr = "";
+        logger.clearLog();
         Serial.println("CLEARING LOG----");
-        request->send_P(200, "text/html", log_page_index_html, processor);
+        request->send(SPIFFS, "/logger.html", String(), false, processor);
     });
 
     server.on("/lowthreshold", HTTP_GET, [] (AsyncWebServerRequest *request){
         if (request->hasParam("value")) {
         lowThresholdStr = request->getParam("value")->value();
         lowThreshold = lowThresholdStr.toInt();
-        logger.log("low threshold is now: ");
         logger.log(lowThresholdStr, true);
+        logger.log("low threshold is now: ");
         }
         request->send(200, "text/plain", "OK");
     });
@@ -170,8 +172,8 @@ void serverSetup(){
         if (request->hasParam("value")) {
         highThresholdStr = request->getParam("value")->value();
         highThreshold = highThresholdStr.toInt();
-        logger.log("high threshold is now: ");
         logger.log(highThresholdStr, true);
+        logger.log("high threshold is now: ");
         }
         request->send(200, "text/plain", "OK");
     });
@@ -185,4 +187,5 @@ void serverLoop(){
         batterycheck.start();
         storeValues();
     }
+    logger.checkLogLength();
 }

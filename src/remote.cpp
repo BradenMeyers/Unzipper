@@ -204,7 +204,7 @@ void remoteLoop() {
   //   }
   //   sendData.start();
   // }
-  if((sendData.getTime() > 250) && (sendRequest) && (failedAttempts < 20)){
+  if((sendData.getTime() > 250) && (sendRequest) && (failedAttempts < 10)){
     updateOutgoing();
     esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &outgoing, sizeof(outgoing));
     if (result == ESP_OK) {
