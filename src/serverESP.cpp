@@ -3,8 +3,10 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <serverESP.h>
+#include <SPIFFS.h>
+
 Logger logger;
-#include <constants.h>
+//#include <constants.h>
 #include <Preferences.h>
 Preferences preferences;
 #include <timer.h>
@@ -69,6 +71,13 @@ void storeValues(){
     preferences.putUInt("zDelay", afterZipDelay);
 }
 
+void initSPIFFS() {
+  if (!SPIFFS.begin()) {
+    Serial.println("An error has occurred while mounting SPIFFS");
+  }
+  Serial.println("SPIFFS mounted successfully");
+}
+
 void serverSetup(){
     preferences.begin("my-app", false);
     motorsMaxSpeed = preferences.getUInt("max", 195);     //max speed
@@ -82,10 +91,11 @@ void serverSetup(){
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(ssid, password);
     server.begin();
+    initSPIFFS();
     delay(3000);
 
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send_P(200, "text/html", index_html, processor);
+        request->send_P(SPIFFS, "text/html", "/index.html", processor);
     });
 
     server.on("/maxspeed", HTTP_GET, [] (AsyncWebServerRequest *request){

@@ -40,11 +40,13 @@ typedef struct racecarStruct{
 } racecarStruct;
 racecarStruct racecarData;
 
-uint8_t broadcastAddress[] = {0x7C, 0x9E, 0xBD, 0x37, 0xE2, 0xA0};
+uint8_t broadcastAddress[] = {0x7C, 0x9E, 0xBD, 0x37, 0xE2, 0xA0}; //7C:9E:BD:37:E2:A0
 
 String success;
 esp_now_peer_info_t peerInfo;
 static bool sentFirstMessage = false;
+static bool sendRequest = false;
+int failedAttempts = 0;
 int stall = 1;
 int half = 0; //0 is not pressed 1 is pressed.
 int beep = 0; // 0 turn off beeper, 1 turn on beeper
@@ -68,6 +70,8 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   if(len < 6){
     memcpy(&connect_request, incomingData, sizeof(connect_request));
     sentFirstMessage = false;
+    sendRequest = true;
+    failedAttempts = 0;
   }
   if(len > 6 && len < 20){
     Serial.println("i am here 1");
@@ -131,24 +135,34 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   if (status ==0){
     success = "Delivery Success :)";
     sentFirstMessage = true;
+    sendRequest = false;
+    failedAttempts = 0;
   }
   else{
     success = "Delivery Fail :(";
+    failedAttempts++;
   }
 }
 
 void compareMessages(){
   if(directionStr == "DOWN" && outgoing.dir == 0 or directionStr == "UP" && outgoing.dir == 1){
     sentFirstMessage = false;
+    sendRequest = true;
+    failedAttempts = 0;
     Serial.print("triggered on direction");
   }
   if(motorsMaxSpeed != outgoing.max){
     Serial.print("triggered on max speed change");
     sentFirstMessage = false;
+    sendRequest = true;
+    failedAttempts = 0;
+
   }
   if(afterZipDelay != outgoing.zipDelay){
     Serial.print("triggered onzip delay change");
     sentFirstMessage = false;
+    sendRequest = true;    
+    failedAttempts = 0;
   }
 }
  
@@ -179,7 +193,18 @@ void remoteSetup() {
 void remoteLoop() {
   if(dataRecTimer.getTime() > 500)    //dont check if the messages are different until data is recieved, it runs the compare too fast
     compareMessages();
-  if(sendData.getTime() > 500 && !sentFirstMessage){
+  // if(sendData.getTime() > 500 && !sentFirstMessage){
+  //   updateOutgoing();
+  //   esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &outgoing, sizeof(outgoing));
+  //   if (result == ESP_OK) {
+  //     Serial.println("Sent with success");
+  //   }
+  //   else {
+  //     Serial.println("Error sending the data");
+  //   }
+  //   sendData.start();
+  // }
+  if((sendData.getTime() > 250) && (sendRequest) && (failedAttempts < 20)){
     updateOutgoing();
     esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &outgoing, sizeof(outgoing));
     if (result == ESP_OK) {
@@ -190,6 +215,7 @@ void remoteLoop() {
     }
     sendData.start();
   }
+
   if(racecarTimer.getTime() > 500){
     racecarMode = false;
   }

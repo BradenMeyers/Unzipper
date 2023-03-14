@@ -3,6 +3,7 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <remote.h>
+#include <Servo.h>
 #include <serverESP.h>
 Logger mainlog;
 #include <timer.h>
@@ -16,8 +17,8 @@ Timer odometerTimer;
 byte buzzer = 27;
 byte motorDirection = 22;
 byte motor = 21;
-byte handleBarSensor = 14;
-byte odometerLed = 19;
+byte handleBarSensor = 17;  //was 19
+byte odometerHallEffect = 14;
 
 
 #define motorChannel 0
@@ -80,6 +81,12 @@ void countRotations(){
   }
   else if(odometerSensorValue < lowThreshold){crossedThreshold = false;}
   }
+}
+
+void countRotationsHallEffect(){
+  static int magneticValue = digitalRead(odometerHallEffect);
+  if(magneticValue != digitalRead(odometerHallEffect))
+    rotations ++;
 }
 
 void startCount(){
@@ -147,6 +154,27 @@ bool someoneOn(int timeLimit){
   return false;
 }
 
+Servo breakServo;
+//bool positionLock = false;
+bool ServoInit = false;
+Timer ServoTimer;
+
+bool setBrake(){
+  if(!ServoInit){
+    breakServo.attach(19);
+    breakServo.write(80);
+    ServoInit = true;
+    ServoTimer.start();
+  }
+  if(ServoTimer.getTime() > 1000){
+    breakServo.write(90);
+    breakServo.detach();
+    ServoInit = false;
+    return true;
+  }
+  return false;
+} 
+
 void turnOnMotor(int speed){
   if(directionStr == "DOWN")
     digitalWrite(motorDirection, HIGH);
@@ -162,10 +190,15 @@ void turnOnMotor(int speed){
   }
 }
 
+
 void readyAtTheTop(){
+  bool servoPositionLock = false;
   mainlog.checkLogLength();
   readyTimeOutTimer.start();
   while(!someoneOn(1000)){
+    if(!servoPositionLock){
+      servoPositionLock = setBrake();
+    }
     if(/* readyTimeOutTimer.getTime() > 120000 or */ wifiSkipToRecovery){
       state = RECOVERY;
       wifiSkipToRecovery = false;
@@ -189,7 +222,7 @@ void readyAtTheTop(){
 void movingDown(){
   startCount();
   while(someoneOn(1000)){
-    countRotations();
+    countRotationsHallEffect();
     if(beep == 1)
       digitalWrite(buzzer, HIGH);
     else
@@ -241,7 +274,7 @@ void moveToTop(){
     turnOnMotor(motorSpeed);
     recoveryTimer.start();
     while(recoveryTimer.getTime() < motorAccelerationTimeLimit){
-      countRotations();
+      countRotationsHallEffect();
       if(someoneOn(50)){
         stopTheMotor();
         mainlog.log(someoneOnLog, true);
@@ -261,7 +294,7 @@ void moveToTop(){
   }
   mainlog.log("Motor has reached max speed", true);
   while(true){
-    countRotations();
+    countRotationsHallEffect();
     if(half){
       turnOnMotor(motorsMaxSpeed/2);
       mainlog.log("half speed activated from remote", true);
@@ -300,9 +333,8 @@ void setup(){
   serverSetup();
   Serial.begin(112500);
   analogReadResolution(12);
-  pinMode(odometerLed, OUTPUT);
-  digitalWrite(odometerLed, HIGH);  //this light stays on all the time
-  pinMode(handleBarSensor, INPUT);
+  pinMode(odometerHallEffect, INPUT);
+  pinMode(handleBarSensor, INPUT_PULLUP);
   pinMode(buzzer, OUTPUT);
   pinMode(motorDirection, OUTPUT);
   pinMode(motor, OUTPUT);
@@ -321,5 +353,26 @@ void loop(){
   else if(state == ZIPPING){movingDown();}
   else if(state == RECOVERY){moveToTop();}
 }
+
+void loopp(){
+  delay(1000);
+  digitalWrite(25, HIGH);
+  Serial.println("I am here1");
+  delay(1000);
+  digitalWrite(25, LOW);
+  digitalWrite(32, HIGH);
+  Serial.println("I am here2");
+  delay(1000);
+  digitalWrite(32, LOW);
+  digitalWrite(23, HIGH);
+  Serial.println("I am here3");
+  delay(1000);
+  digitalWrite(23, LOW);
+  
+}
+
+
+
+
 
 
