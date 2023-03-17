@@ -7,6 +7,7 @@
 #include <remote.h>
 #include <Servo.h>
 #include <serverESP.h>
+#include <accelerometer.h>
 Logger mainlog;
 #include <timer.h>
 Timer recoveryTimer;
@@ -257,7 +258,7 @@ void moveToTop(){
   digitalWrite(buzzer, HIGH);
   //atTheTop = false;
   recoveryTimer.start();
-  while(recoveryTimer.getTime() < afterZipDelay*1000){
+  while(!checkStable(afterZipDelay)){
     if(wifiStopMotor){
       wifiStopMotor = false;
       stopTheMotor();

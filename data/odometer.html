@@ -11,7 +11,7 @@
       outline: none; -webkit-transition: .2s; transition: opacity .2s;}
     .slider::-webkit-slider-thumb {-webkit-appearance: none; appearance: none; width: 35px; height: 35px; background: #5dfc4e; cursor: pointer;}
     .slider::-moz-range-thumb { width: 35px; height: 35px; background: #003249; cursor: pointer;}
-    .back_button{background-color: #2aa2d1; border: none; color: black; padding: 16px 40px;}
+    .button{background-color: #2aa2d1; border: none; color: black; padding: 16px 40px;}
   </style>
 </head>
 <body>
@@ -21,7 +21,8 @@
   <p><input type="range" onchange="sliderSend(this)" id="lowThresholdSlider" min="1" max="4094" value="%LOWTHRESHOLD%" step="100" class="slider"></p>
   <p><span>High Threshold: %HIGHTHRESHOLD%</span></p>
   <p><input type="range" onchange="sliderSend(this)" id="highThresholdSlider" min="1" max="4094" value="%HIGHTHRESHOLD%" step="100" class="slider"></p>
-  <p><button id="back_button" class="button back_button" onclick="location.href = '/back';">Back</button></p>
+  <p><button id="button1" class="button button1" onclick="location.href = '/resetStable';">Stable</button></p>
+  <p><button id="button1" class="button button1" onclick="location.href = '/back';">Back</button></p>
 <script>
 function sliderSend(element){
   var sliderValue = element.value;
@@ -33,6 +34,7 @@ function sliderSend(element){
 function buttonClickSend(element){
   var xhr = new XMLHttpRequest();
   if(element.id == "back_button"){xhr.open("GET", "/back");}
+  else if(element.id == "set_stable"){xhr.open("GET", "/resetStable");}
   xhr.send();
 }
 </script>

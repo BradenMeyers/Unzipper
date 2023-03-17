@@ -2,6 +2,7 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <timer.h>
+#include <accelerometer.h>
 
 Adafruit_MPU6050 mpu;
 sensors_event_t a, g, temp;
@@ -9,6 +10,7 @@ sensors_event_t a, g, temp;
 Timer gyro;
 Timer accel;
 Timer tempTimer;
+Timer stableTimer;
 
 float gyroX, gyroY, gyroZ;
 float accX, accY, accZ;
@@ -68,9 +70,9 @@ void getAccReadings() {
   accZ = a.acceleration.z;
 }
 
-void getTemperature(){
+float getTemperature(){
   mpu.getEvent(&a, &g, &temp);
-  temperature = temp.temperature;
+  return temp.temperature;
 }
 
 void resetGyro(){
@@ -124,13 +126,23 @@ void read_acc(bool print=false){
 }
 
 void setStable(){
-    getAccReadings();
-    uprightX = accX;
-    uprightY = accY;
-    uprightZ = accZ;
+    float count = 25;
+    uprightX = 0;
+    uprightY = 0;
+    uprightZ = 0;
+    for (int i=0; i< count; i++){
+        getAccReadings();
+        uprightX += accX;
+        uprightY += accY;
+        uprightZ += accZ;
+    }
+    uprightX = uprightX/count;
+    uprightY = uprightY/count;
+    uprightZ = uprightZ/count;
+
 }
 
-bool checkStable(){
+bool checkInstantStable(){
     static bool stableX = false;
     static bool stableY = false;
     static bool stableZ = false;
@@ -151,14 +163,24 @@ bool checkStable(){
     return stableX and stableY and stableZ;
 }
 
+bool checkStable(int timeStable){
+    if(checkInstantStable()){
+        if(stableTimer.getTime() > timeStable)
+            return true;
+        return false;
+    }
+    else{
+        stableTimer.start();
+        return false;
+    }
+}
 
-void setup(){
+void setupAccel(){
     Serial.begin(115200);
-
     initMPU();
 }
 
-void loop(){
-    Serial.println(checkStable());
-    delay(400);
+void looop(){
+    // Serial.println(checkStable());
+    // delay(400);
 }

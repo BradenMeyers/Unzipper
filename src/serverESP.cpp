@@ -4,6 +4,7 @@
 #include <ESPAsyncWebServer.h>
 #include <serverESP.h>
 #include <SPIFFS.h>
+#include <accelerometer.h>
 
 Logger logger;
 //#include <constants.h>
@@ -60,6 +61,7 @@ String processor(const String& var){
   else if(var == "LOWTHRESHOLD"){return lowThresholdStr;}
   else if(var == "HIGHTHRESHOLD"){return highThresholdStr;}
   else if(var == "VOLTAGE") return String(batteryVoltage());
+  else if(var == "TEMPERATURE") return String(getTemperature());
   else if(var == "LOGSTRING"){return logger.logStr;}
   return String();
 }
@@ -177,6 +179,14 @@ void serverSetup(){
         }
         request->send(200, "text/plain", "OK");
     });
+
+    server.on("/resetStable", HTTP_GET, [](AsyncWebServerRequest *request){
+        setStable();
+        Serial.println("Stable reset");
+        logger.log("Stable reset");
+        request->send(SPIFFS, "/odometer.html", String(), false, processor);
+    });
+
     pinMode(batteryMonitor, INPUT);
     batterycheck.start();
 }
