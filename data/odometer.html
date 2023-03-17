@@ -11,7 +11,8 @@
       outline: none; -webkit-transition: .2s; transition: opacity .2s;}
     .slider::-webkit-slider-thumb {-webkit-appearance: none; appearance: none; width: 35px; height: 35px; background: #5dfc4e; cursor: pointer;}
     .slider::-moz-range-thumb { width: 35px; height: 35px; background: #003249; cursor: pointer;}
-    .button{background-color: #2aa2d1; border: none; color: black; padding: 16px 40px;}
+    .button1{background-color: #2aa2d1; border: none; color: black; padding: 16px 40px;}
+    .button2{background-color: #069b1c; border: none; color: black; padding: 16px 40px;}
   </style>
 </head>
 <body>
@@ -22,7 +23,8 @@
   <p><span>High Threshold: %HIGHTHRESHOLD%</span></p>
   <p><input type="range" onchange="sliderSend(this)" id="highThresholdSlider" min="1" max="4094" value="%HIGHTHRESHOLD%" step="100" class="slider"></p>
   <p><button id="button1" class="button button1" onclick="location.href = '/resetStable';">Stable</button></p>
-  <p><button id="button1" class="button button1" onclick="location.href = '/back';">Back</button></p>
+  <p><button id="button2" class="button button2" onclick="location.href = '/back';">Back</button></p>
+  <p><input type="range" onchange="sliderSend(this)" id="uprightError" min="0.1" max="2.5" value="%UPRIGHTERROR%" step="0.1" class="slider"></p>
 <script>
 function sliderSend(element){
   var sliderValue = element.value;

@@ -30,7 +30,7 @@
   <p><span>Max Speed: %MAXSPEEDVALUE%</span></p>
   <p><input type="range" onchange="sliderSend(this)" id="maxSpeedSlider" min="100" max="255" value="%MAXSPEEDVALUE%" step="1" class="slider"></p>
   <p><span>After Zip Delay (in seconds): %AFTERZIPDELAY%</span></p>
-  <p><input type="range" onchange="sliderSend(this)" id="afterZipDelaySlider" min="0" max="60" value="%AFTERZIPDELAY%" step="1" class="slider"></p>
+  <p><input type="range" onchange="sliderSend(this)" id="afterZipDelaySlider" min="0.0" max="20.0" value="%AFTERZIPDELAY%" step="0.5" class="slider"></p>
   <p><button id="odometer_settings_button" class="button odometer_settings_button" onclick="location.href = '/odometersettingsclick';">Odometer Settings</button></p>
   <p><button id="log_button" class="button log_button" onclick="location.href = '/logclick';">Log Page</button></p>
   <!-- <p><button id="server_button" class="button server_button" onclick="location.href = '/serverclick';">Log Page</button></p> -->

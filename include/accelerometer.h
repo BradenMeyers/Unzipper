@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 
+float uprightError;
+
 float getTemperature();
 
 void resetGyro();

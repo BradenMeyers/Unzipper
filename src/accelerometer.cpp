@@ -164,9 +164,16 @@ bool checkInstantStable(){
 }
 
 bool checkStable(int timeStable){
+    static bool init = false;
+    if (!init){
+        stableTimer.start();
+        init = true;
+    }
     if(checkInstantStable()){
-        if(stableTimer.getTime() > timeStable)
+        if(stableTimer.getTime() > timeStable){
+            init = false;
             return true;
+        }
         return false;
     }
     else{

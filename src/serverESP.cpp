@@ -35,6 +35,7 @@ String stateStr = "Ready";
 String directionStr = "UP";
 String motorMaxSpeedStr = String(motorsMaxSpeed);
 String afterZipDelayStr = String(afterZipDelay);  //cause actual variable is in miliseconds but wifi is in seconds
+String uprightErrorStr = String(uprightError);
 
 bool wifiStopMotor = false;
 bool wifiSkipToRecovery = false;
@@ -60,6 +61,7 @@ String processor(const String& var){
   else if(var == "CURRENTIRVALUE"){return String(analogRead(odometerSensor));}
   else if(var == "LOWTHRESHOLD"){return lowThresholdStr;}
   else if(var == "HIGHTHRESHOLD"){return highThresholdStr;}
+  else if(var == "UPRIGHTERROR"){return String(uprightError);}
   else if(var == "VOLTAGE") return String(batteryVoltage());
   else if(var == "TEMPERATURE") return String(getTemperature());
   else if(var == "LOGSTRING"){return logger.logStr;}
@@ -71,6 +73,7 @@ void storeValues(){
     preferences.putUInt("upper", highThreshold);
     preferences.putUInt("max", motorsMaxSpeed);
     preferences.putUInt("zDelay", afterZipDelay);
+    preferences.putUInt("uError", uprightError);
 }
 
 void initSPIFFS() {
@@ -86,10 +89,12 @@ void serverSetup(){
     highThreshold = preferences.getUInt("upper", 2500); //Upper IR Threshold
     lowThreshold = preferences.getUInt("lower", 1000); //Lower IR threshold
     afterZipDelay = preferences.getUInt("zDelay", 1000);  //Delay after the zipping state
+    uprightError = preferences.getUInt("uError", 1.5);  //Delay after the zipping state
     motorMaxSpeedStr = String(motorsMaxSpeed);
     afterZipDelayStr = String(afterZipDelay);
     lowThresholdStr = String(lowThreshold);
     highThresholdStr = String(highThreshold);
+    uprightErrorStr = String(uprightError);
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(ssid, password);
     server.begin();
@@ -118,6 +123,16 @@ void serverSetup(){
         afterZipDelay = afterZipDelayStr.toInt();
         logger.log(afterZipDelayStr, true);
         logger.log("After zip delay is now: ");
+        }
+        request->send(200, "text/plain", "OK");
+    });
+    server.on("/uprightError", HTTP_GET, [] (AsyncWebServerRequest *request){
+        // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
+        if (request->hasParam("value")) {
+        uprightErrorStr = request->getParam("value")->value();
+        uprightError = uprightErrorStr.toInt();
+        logger.log(uprightErrorStr, true);
+        logger.log("Upright Error is now: ");
         }
         request->send(200, "text/plain", "OK");
     });
@@ -183,7 +198,7 @@ void serverSetup(){
     server.on("/resetStable", HTTP_GET, [](AsyncWebServerRequest *request){
         setStable();
         Serial.println("Stable reset");
-        logger.log("Stable reset");
+        logger.log("Stable reset", true);
         request->send(SPIFFS, "/odometer.html", String(), false, processor);
     });
 
