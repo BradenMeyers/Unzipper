@@ -17,7 +17,7 @@ extern int odometerSensorValue;
 
 extern int motorsMaxSpeed;
 extern String motorMaxSpeedStr;
-extern int afterZipDelay;
+extern float afterZipDelay;
 extern String afterZipDelayStr;  //cause actual variable is in miliseconds but wifi is in seconds
 extern String directionStr;
 extern bool wifiStopMotor;

@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-float uprightError;
+extern float uprightError;
 
 float getTemperature();
 

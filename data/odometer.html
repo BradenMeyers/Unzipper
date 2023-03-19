@@ -24,13 +24,15 @@
   <p><input type="range" onchange="sliderSend(this)" id="highThresholdSlider" min="1" max="4094" value="%HIGHTHRESHOLD%" step="100" class="slider"></p>
   <p><button id="button1" class="button button1" onclick="location.href = '/resetStable';">Stable</button></p>
   <p><button id="button2" class="button button2" onclick="location.href = '/back';">Back</button></p>
-  <p><input type="range" onchange="sliderSend(this)" id="uprightError" min="0.1" max="2.5" value="%UPRIGHTERROR%" step="0.1" class="slider"></p>
+  <p><span>Upright Error: %UPRIGHTERROR%</span></p>
+  <p><input type="range" onchange="sliderSend(this)" id="uprightErrorSlider" min="0.1" max="2.5" value="%UPRIGHTERROR%" step="0.1" class="slider"></p>
 <script>
 function sliderSend(element){
   var sliderValue = element.value;
   var xhr = new XMLHttpRequest();
   if(element.id == "lowThresholdSlider"){xhr.open("GET", "/lowthreshold?value="+sliderValue);}
   else if(element.id == "highThresholdSlider"){xhr.open("GET", "/highthreshold?value="+sliderValue);}
+  else if(element.id == "uprightErrorSlider"){xhr.open("GET", "/uprightError?value="+sliderValue);}
   xhr.send();
 }
 function buttonClickSend(element){

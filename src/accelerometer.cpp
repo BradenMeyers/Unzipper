@@ -164,26 +164,28 @@ bool checkInstantStable(){
 }
 
 bool checkStable(int timeStable){
-    static bool init = false;
-    if (!init){
-        stableTimer.start();
-        init = true;
-    }
+    // static bool init = false;
+    // if (!init){
+    //     stableTimer.start();
+    //     init = true;
+    // }
     if(checkInstantStable()){
         if(stableTimer.getTime() > timeStable){
-            init = false;
+            // init = false;
+            Serial.println("the zipline is stable");
             return true;
         }
-        return false;
+        else
+            return false;
     }
     else{
         stableTimer.start();
+        Serial.println("the zipline is not stable");
         return false;
     }
 }
 
 void setupAccel(){
-    Serial.begin(115200);
     initMPU();
 }
 

@@ -24,7 +24,7 @@ byte odometerSensor = 33;
 byte state = READY;
 int odometerSensorValue = 0;
 int motorsMaxSpeed = 200;
-int afterZipDelay = 7;
+float afterZipDelay = 7;
 
 int highThreshold = 3000;
 String highThresholdStr = String(highThreshold);
@@ -72,8 +72,8 @@ void storeValues(){
     preferences.putUInt("lower", lowThreshold);
     preferences.putUInt("upper", highThreshold);
     preferences.putUInt("max", motorsMaxSpeed);
-    preferences.putUInt("zDelay", afterZipDelay);
-    preferences.putUInt("uError", uprightError);
+    preferences.putFloat("zDelay", afterZipDelay);
+    preferences.putFloat("uError", uprightError);
 }
 
 void initSPIFFS() {
@@ -88,8 +88,8 @@ void serverSetup(){
     motorsMaxSpeed = preferences.getUInt("max", 195);     //max speed
     highThreshold = preferences.getUInt("upper", 2500); //Upper IR Threshold
     lowThreshold = preferences.getUInt("lower", 1000); //Lower IR threshold
-    afterZipDelay = preferences.getUInt("zDelay", 1000);  //Delay after the zipping state
-    uprightError = preferences.getUInt("uError", 1.5);  //Delay after the zipping state
+    afterZipDelay = preferences.getFloat("zDelay", 10);  //Delay after the zipping state
+    uprightError = preferences.getFloat("uError", 1.5);  //Delay after the zipping state
     motorMaxSpeedStr = String(motorsMaxSpeed);
     afterZipDelayStr = String(afterZipDelay);
     lowThresholdStr = String(lowThreshold);
@@ -120,7 +120,7 @@ void serverSetup(){
         // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
         if (request->hasParam("value")) {
         afterZipDelayStr = request->getParam("value")->value();
-        afterZipDelay = afterZipDelayStr.toInt();
+        afterZipDelay = afterZipDelayStr.toFloat();
         logger.log(afterZipDelayStr, true);
         logger.log("After zip delay is now: ");
         }
@@ -130,7 +130,7 @@ void serverSetup(){
         // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
         if (request->hasParam("value")) {
         uprightErrorStr = request->getParam("value")->value();
-        uprightError = uprightErrorStr.toInt();
+        uprightError = uprightErrorStr.toFloat();
         logger.log(uprightErrorStr, true);
         logger.log("Upright Error is now: ");
         }

@@ -5,7 +5,7 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <remote.h>
-#include <Servo.h>
+// #include <Servo.h>
 #include <serverESP.h>
 #include <accelerometer.h>
 Logger mainlog;
@@ -18,8 +18,8 @@ Timer handleBarTimer;
 Timer odometerTimer;
 
 byte buzzer = 27;
-byte motorDirection = 22;
-byte motor = 21;
+byte motorDirection = 12;  //updated on mar 17
+byte motor = 26;  //updated on mar 17
 byte handleBarSensor = 17;  //was 19
 byte odometerHallEffect = 14;
 
@@ -157,21 +157,21 @@ bool someoneOn(int timeLimit){
   return false;
 }
 
-Servo breakServo;
+// Servo breakServo;
 //bool positionLock = false;
 bool ServoInit = false;
 Timer ServoTimer;
 
 bool setBrake(){
   if(!ServoInit){
-    breakServo.attach(19);
-    breakServo.write(80);
+    // breakServo.attach(19);
+    // breakServo.write(80);
     ServoInit = true;
     ServoTimer.start();
   }
   if(ServoTimer.getTime() > 1000){
-    breakServo.write(90);
-    breakServo.detach();
+    // breakServo.write(90);
+    // breakServo.detach();
     ServoInit = false;
     return true;
   }
@@ -258,14 +258,14 @@ void moveToTop(){
   digitalWrite(buzzer, HIGH);
   //atTheTop = false;
   recoveryTimer.start();
-  while(!checkStable(afterZipDelay)){
+  while(!checkStable(afterZipDelay*1000)){  //!checkStable(afterZipDelay*1000)  //recoveryTimer.getTime() < afterZipDelay*1000
     if(wifiStopMotor){
       wifiStopMotor = false;
       stopTheMotor();
       mainlog.log(wifiStopMotorLog, true);
       return;
     }
-    if(someoneOn(1000)){
+    if(someoneOn(500)){
       stopTheMotor();
       mainlog.log(someoneOnLog, true);
       return;
@@ -275,6 +275,7 @@ void moveToTop(){
   digitalWrite(buzzer, LOW);
   for(int motorSpeed=50; motorSpeed<=motorsMaxSpeed; motorSpeed++){
     turnOnMotor(motorSpeed);
+    Serial.println(motorSpeed);
     recoveryTimer.start();
     while(recoveryTimer.getTime() < motorAccelerationTimeLimit){
       countRotationsHallEffect();
@@ -346,6 +347,7 @@ void setup(){
   ledcAttachPin(motor, motorChannel);
   ledcWrite(motorChannel, 0);
   remoteSetup();
+  setupAccel();
 }
 
 void loop(){
