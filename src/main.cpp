@@ -5,7 +5,7 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <remote.h>
-// #include <Servo.h>
+#include <servoBrake.h>
 #include <serverESP.h>
 #include <accelerometer.h>
 Logger mainlog;
@@ -16,15 +16,16 @@ Timer readyTimeOutTimer;
 Timer stallTimer;
 Timer handleBarTimer;
 Timer odometerTimer;
+#define DELAYODOMETER 5
 
 byte buzzer = 27;
 byte motorDirection = 12;  //updated on mar 17
 byte motor = 26;  //updated on mar 17
 byte handleBarSensor = 17;  //was 19
-byte odometerHallEffect = 14;
+byte odometerHallEffect = 33;
+#define ODOMETERSTALLRATE 160
 
-
-#define motorChannel 0
+#define motorChannel 1
 #define resolution 8
 #define freq 5000
 #define RECOVERY_TO_READY_AFTER_BEEN_GRABBED_TIME 1700
@@ -86,10 +87,17 @@ bool shouldCheckAtTheTop = true;
 //   }
 // }
 
-void countRotationsHallEffect(){
-  static int magneticValue = digitalRead(odometerHallEffect);
-  if(magneticValue != digitalRead(odometerHallEffect))
-    rotations ++;
+void countRotationsHallEffect(int pin){
+  int magneticValue = digitalRead(pin);
+  static int lastValue = digitalRead(pin);
+  if(odometerTimer.getTime() > DELAYODOMETER){
+    if(magneticValue != lastValue){
+      rotations ++;
+      lastValue = magneticValue;
+      odometerTimer.start();
+      // Serial.println(rotations);
+    }
+  }
 }
 
 void startCount(){
@@ -120,6 +128,7 @@ bool isAtTheTop(){
 
 bool isStalled(){
   static unsigned long stallRotationCount;
+  countRotationsHallEffect(odometerHallEffect);
   // If there have been no rotations in less than 160 milliseconds will return true, otherwise false
   if(stall){  
     if(not stallTimer.started){
@@ -128,16 +137,18 @@ bool isStalled(){
       stallRotationCount = rotations;
       return false;
     }
-    else if(stallTimer.getTime() > 160){
+    else if(stallTimer.getTime() > ODOMETERSTALLRATE){
       stallTimer.started = false;
-      if(rotations - stallRotationCount < 2){
+      // Serial.print("rotations per check:");
+      // Serial.println(rotations - stallRotationCount);
+      if(rotations - stallRotationCount < 1){
         return true;
       }
     }
     return false;
   }
   else{
-    mainlog.log("Stall turned off", true);
+    // mainlog.log("Stall turned off", true);
     return false;
   }
 }
@@ -157,27 +168,6 @@ bool someoneOn(int timeLimit){
   return false;
 }
 
-// Servo breakServo;
-//bool positionLock = false;
-bool ServoInit = false;
-Timer ServoTimer;
-
-bool setBrake(){
-  if(!ServoInit){
-    // breakServo.attach(19);
-    // breakServo.write(80);
-    ServoInit = true;
-    ServoTimer.start();
-  }
-  if(ServoTimer.getTime() > 1000){
-    // breakServo.write(90);
-    // breakServo.detach();
-    ServoInit = false;
-    return true;
-  }
-  return false;
-} 
-
 void turnOnMotor(int speed){
   if(directionStr == "DOWN")
     digitalWrite(motorDirection, HIGH);
@@ -193,15 +183,12 @@ void turnOnMotor(int speed){
   }
 }
 
-
 void readyAtTheTop(){
   bool servoPositionLock = false;
   mainlog.checkLogLength();
   readyTimeOutTimer.start();
   while(!someoneOn(1000)){
-    if(!servoPositionLock){
-      servoPositionLock = setBrake();
-    }
+    writeServo(STOPPOS);
     if(/* readyTimeOutTimer.getTime() > 120000 or */ wifiSkipToRecovery){
       state = RECOVERY;
       wifiSkipToRecovery = false;
@@ -225,7 +212,7 @@ void readyAtTheTop(){
 void movingDown(){
   startCount();
   while(someoneOn(1000)){
-    countRotationsHallEffect();
+    countRotationsHallEffect(odometerHallEffect);
     if(beep == 1)
       digitalWrite(buzzer, HIGH);
     else
@@ -275,10 +262,9 @@ void moveToTop(){
   digitalWrite(buzzer, LOW);
   for(int motorSpeed=50; motorSpeed<=motorsMaxSpeed; motorSpeed++){
     turnOnMotor(motorSpeed);
-    Serial.println(motorSpeed);
     recoveryTimer.start();
     while(recoveryTimer.getTime() < motorAccelerationTimeLimit){
-      countRotationsHallEffect();
+      countRotationsHallEffect(odometerHallEffect);
       if(someoneOn(50)){
         stopTheMotor();
         mainlog.log(someoneOnLog, true);
@@ -289,16 +275,18 @@ void moveToTop(){
         mainlog.log(wifiStopMotorLog, true);
         return;
       }
-      if(motorSpeed > motorsMaxSpeed - 30 and isStalled()){
+      if((motorSpeed > (motorsMaxSpeed - 30)) and isStalled()){
         mainlog.log(stalledLog, true);
         stopTheMotor();
+        Serial.println("stopped here");
         return;
       }
     }
   }
   mainlog.log("Motor has reached max speed", true);
   while(true){
-    countRotationsHallEffect();
+    //Serial.println(rotations);
+    countRotationsHallEffect(odometerHallEffect);
     if(half){
       turnOnMotor(motorsMaxSpeed/2);
       mainlog.log("half speed activated from remote", true);
@@ -314,6 +302,7 @@ void moveToTop(){
     if(isStalled()){
         mainlog.log(stalledLog, true);
         stopTheMotor();
+        Serial.println("stopped here2");
         break;
       }
     // if(isAtTheTop() and not atTheTop){
@@ -348,6 +337,7 @@ void setup(){
   ledcWrite(motorChannel, 0);
   remoteSetup();
   setupAccel();
+  servoSetup();
 }
 
 void loop(){
