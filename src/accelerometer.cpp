@@ -7,6 +7,8 @@
 Adafruit_MPU6050 mpu;
 sensors_event_t a, g, temp;
 
+#define MOVING_STABLE_SHUTDOWN 200
+
 Timer gyro;
 Timer accel;
 Timer tempTimer;
@@ -183,6 +185,22 @@ bool checkStable(int timeStable){
         Serial.println("the zipline is not stable");
         return false;
     }
+}
+
+Timer movingTimer;
+
+bool movingStable(){
+    if(checkInstantStable()){
+        movingTimer.start();    //reset the timer every time the system reports that it is stable
+        return true;
+    }
+    else{
+        if(movingTimer.getTime() > MOVING_STABLE_SHUTDOWN){  //if unstable for period of time will return false
+            return false;
+            Serial.println("Shutdown motor due to unstability");
+        }
+    }
+    return true;
 }
 
 void setupAccel(){

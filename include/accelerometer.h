@@ -7,6 +7,8 @@ extern float uprightError;
 
 float getTemperature();
 
+bool movingStable();
+
 void resetGyro();
 
 void setStable();

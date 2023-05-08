@@ -206,6 +206,8 @@ void readyAtTheTop(){
     else
       digitalWrite(buzzer, LOW);
   }
+  writeServo(OFFPOS);
+  delay(SERVODELAY);
   state = ZIPPING;
 }
 
@@ -222,6 +224,8 @@ void movingDown(){
   mainlog.log("Total Rotations that were zipped: ");
   mainlog.log(rotations - beforeRotations, true);
   state = RECOVERY;
+  writeServo(STOPPOS);
+  delay(SERVODELAY);
 }
 
 void stopTheMotor(){
@@ -258,6 +262,8 @@ void moveToTop(){
       return;
     }
   }
+  writeServo(OFFPOS);
+  delay(SERVODELAY);
   mainlog.log("Begin speeding motor up", true);
   digitalWrite(buzzer, LOW);
   for(int motorSpeed=50; motorSpeed<=motorsMaxSpeed; motorSpeed++){
@@ -278,7 +284,11 @@ void moveToTop(){
       if((motorSpeed > (motorsMaxSpeed - 30)) and isStalled()){
         mainlog.log(stalledLog, true);
         stopTheMotor();
-        Serial.println("stopped here");
+        return;
+      }
+      if(!movingStable()){
+        stopTheMotor();
+        mainlog.log("System is unstable", true);
         return;
       }
     }
@@ -300,11 +310,15 @@ void moveToTop(){
       break;
     }
     if(isStalled()){
-        mainlog.log(stalledLog, true);
-        stopTheMotor();
-        Serial.println("stopped here2");
-        break;
-      }
+      mainlog.log(stalledLog, true);
+      stopTheMotor();
+      break;
+    }
+    if(!movingStable()){
+      stopTheMotor();
+      mainlog.log("System is unstable", true);
+      break;
+    }
     // if(isAtTheTop() and not atTheTop){
     //   turnOnMotor(motorsMaxSpeed - 70);
     //   mainlog.log("Turning motor down because were at the top", true);
