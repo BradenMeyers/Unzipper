@@ -1,5 +1,5 @@
-#ifndef servoBrake.h
-#define ESP32_Servo_h
+#ifndef servoBrake
+#define servoBrake
 
 #include <Arduino.h>
 

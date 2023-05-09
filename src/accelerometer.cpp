@@ -207,7 +207,3 @@ void setupAccel(){
     initMPU();
 }
 
-void looop(){
-    // Serial.println(checkStable());
-    // delay(400);
-}

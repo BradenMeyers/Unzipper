@@ -6,7 +6,7 @@
 #define MAXMICRO 2500
 #define NUETRALMICRO 1500       //PWM specs found on datasheet from part and on Amazon
 
-#define SERVOPIN 4          //GPIO pin 4
+#define SERVOPIN 19          //GPIO pin 4
 #define SERVOCHANNEL 2
 #define FREQUENCY 50    //AMAZON Specs for servo said frequency could be between 50-330hz
 #define RESOLUTION 16   //found this on esp32 servo library as DEFAULT_TIMER_WIDTH
@@ -43,6 +43,11 @@ void writeServo(int value)
     writeMicroseconds(value);
 }
 
+int usToTicks(int usec)
+{
+    return (int)((float)usec / ((float)REFRESH_USEC / (float)DEFAULT_TIMER_WIDTH_TICKS));   
+}
+
 void writeMicroseconds(int value){
     if (attached)   // ensure channel is valid
     {
@@ -57,10 +62,7 @@ void writeMicroseconds(int value){
     }
 }
 
-int usToTicks(int usec)
-{
-    return (int)((float)usec / ((float)REFRESH_USEC / (float)DEFAULT_TIMER_WIDTH_TICKS));   
-}
+
 
 int ticksToUs(int ticks)
 {

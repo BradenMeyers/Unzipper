@@ -362,9 +362,3 @@ void loop(){
   else if(state == ZIPPING){movingDown();}
   else if(state == RECOVERY){moveToTop();}
 }
-
-
-
-
-
-
