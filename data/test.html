@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        html {font-family: Arial; display: inline-block; text-align: center;}
+        h2 {font-size: 1.4rem;}
+        p {font-size: 1rem;}
+        body {max-width: 400px; margin:0px auto; padding-bottom: 25px;}
+       .button {
+            display: inline-block;
+            margin: 10px;
+            padding: 20px 40px;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            color: #fff;
+            cursor: pointer;
+        }
+        
+        .motor {
+            background-color: #ff5733;
+        }
+        
+        .accelerometer {
+            background-color: #33aaff;
+        }
+        
+        .odometer {
+            background-color: #33ff57;
+        }
+        
+        .servo {
+            background-color: #ff33a6;
+        }
+        
+        .back-button {
+            background-color: #555555;
+            position: fixed;
+            top: 10px;
+            left: 10px;
+
+        }
+    </style>
+</head>
+<body>
+    <button id="back" class="button back-button" onclick="location.href = '/back';">Back</button>
+    <button id="motor-button" class="button motor" onclick="location.href = '/motortest';">Motor</button>
+    <button id="accel-button" class="button accelerometer" onclick="location.href = '/acceltest';">Accelerometer</button>
+    <button id="odom-button" class="button odometer" onclick="location.href = '/odomtest';">Odometer</button>
+    <button id="servo-button" class="button servo" onclick="location.href = '/servotest';">Servo</button>
+    <p>Serial Data: </p>
+    %TESTLOG%
+
+    <!-- <script>
+        function buttonClickSend(element){
+            var xhr = new XMLHttpRequest();
+            if(element.id == "back"){xhr.open("GET", "/back");}
+            else if(element.id == "motor-button"){xhr.open("GET", "/motortest");}
+            else if(element.id == "accel-button"){xhr.open("GET", "/acceltest");}
+            else if(element.id == "odom-button"){xhr.open("GET", "/odomtest");}
+            else if(element.id == "servo-button"){xhr.open("GET", "/servotest");}
+            xhr.send();
+        }
+    </script> -->
+    
+
+</body>
+</html>

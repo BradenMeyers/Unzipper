@@ -3,6 +3,7 @@
 #include <Adafruit_Sensor.h>
 #include <timer.h>
 #include <accelerometer.h>
+#include <testCases.h>
 
 Adafruit_MPU6050 mpu;
 sensors_event_t a, g, temp;
@@ -174,15 +175,17 @@ bool checkStable(int timeStable){
     if(checkInstantStable()){
         if(stableTimer.getTime() > timeStable){
             init = false;
-            Serial.println("the zipline is stable");
+            testLogger.log("The zipline is stable");
             return true;
         }
-        else
+        else{
+            testLogger.log("Zipline is stable - Wait");
             return false;
+        }
     }
     else{
         stableTimer.start();
-        Serial.println("the zipline is not stable");
+        testLogger.log("the zipline is not stable");
         return false;
     }
 }

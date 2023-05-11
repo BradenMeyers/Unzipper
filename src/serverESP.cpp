@@ -5,8 +5,19 @@
 #include <serverESP.h>
 #include <SPIFFS.h>
 #include <accelerometer.h>
+#include <testCases.h>
 
-Logger logger;
+Blogger logger;
+
+typedef enum{
+    ACCELEROMETER,
+    ODOMETER, 
+    LED,
+    MOTOR,
+    SERVO
+} server_test;
+server_test testServer = LED;
+
 //#include <constants.h>
 #include <Preferences.h>
 Preferences preferences;
@@ -64,7 +75,8 @@ String processor(const String& var){
   else if(var == "UPRIGHTERROR"){return String(uprightError);}
   else if(var == "VOLTAGE") return String(batteryVoltage());
   else if(var == "TEMPERATURE") return String(getTemperature());
-  else if(var == "LOGSTRING"){return logger.logStr;}
+  else if(var == "LOGSTRING"){return logger.logStr.c_str();}
+  else if(var == "TESTLOG"){return testLogger.logStr.c_str();}
   return String();
 }
 
@@ -110,8 +122,8 @@ void serverSetup(){
         if (request->hasParam("value")) {
         motorMaxSpeedStr = request->getParam("value")->value();
         motorsMaxSpeed = motorMaxSpeedStr.toInt();
-        logger.log(motorMaxSpeedStr, true);
-        logger.log("Max speed in now: ");
+        logger.log("Max speed in now: ", true);
+        logger.log(motorMaxSpeedStr);
         }
         request->send(200, "text/plain", "OK");
     });
@@ -121,8 +133,8 @@ void serverSetup(){
         if (request->hasParam("value")) {
         afterZipDelayStr = request->getParam("value")->value();
         afterZipDelay = afterZipDelayStr.toFloat();
-        logger.log(afterZipDelayStr, true);
-        logger.log("After zip delay is now: ");
+        logger.log("After zip delay is now: ", true);
+        logger.log(afterZipDelayStr);
         }
         request->send(200, "text/plain", "OK");
     });
@@ -131,8 +143,8 @@ void serverSetup(){
         if (request->hasParam("value")) {
         uprightErrorStr = request->getParam("value")->value();
         uprightError = uprightErrorStr.toFloat();
-        logger.log(uprightErrorStr, true);
-        logger.log("Upright Error is now: ");
+        logger.log("Upright Error is now: ", true);
+        logger.log(uprightErrorStr);
         }
         request->send(200, "text/plain", "OK");
     });
@@ -162,6 +174,9 @@ void serverSetup(){
     });
 
     server.on("/back", HTTP_GET, [](AsyncWebServerRequest *request){
+        if(state == TEST){
+            state = READY;
+        }
         request->send(SPIFFS, "/index.html", String(), false, processor);
     });
 
@@ -179,8 +194,8 @@ void serverSetup(){
         if (request->hasParam("value")) {
         lowThresholdStr = request->getParam("value")->value();
         lowThreshold = lowThresholdStr.toInt();
-        logger.log(lowThresholdStr, true);
-        logger.log("low threshold is now: ");
+        logger.log("low threshold is now: ", true);
+        logger.log(lowThresholdStr);
         }
         request->send(200, "text/plain", "OK");
     });
@@ -189,19 +204,37 @@ void serverSetup(){
         if (request->hasParam("value")) {
         highThresholdStr = request->getParam("value")->value();
         highThreshold = highThresholdStr.toInt();
-        logger.log(highThresholdStr, true);
-        logger.log("high threshold is now: ");
+        logger.log("high threshold is now: ", true);
+        logger.log(highThresholdStr);
         }
         request->send(200, "text/plain", "OK");
     });
 
     server.on("/resetStable", HTTP_GET, [](AsyncWebServerRequest *request){
         setStable();
-        Serial.println("Stable reset");
         logger.log("Stable reset", true);
         request->send(SPIFFS, "/odometer.html", String(), false, processor);
     });
-
+    server.on("/testclick", HTTP_GET, [](AsyncWebServerRequest *request){
+        state = TEST;
+        request->send(SPIFFS, "/test.html", String(), false, processor);
+    });
+    server.on("/motortest", HTTP_GET, [](AsyncWebServerRequest *request){
+        web_select(MOTOR);
+        request->send(SPIFFS, "/test.html", String(), false, processor);
+    });
+    server.on("/acceltest", HTTP_GET, [](AsyncWebServerRequest *request){
+        web_select(ACCELEROMETER);
+        request->send(SPIFFS, "/test.html", String(), false, processor);
+    });
+    server.on("/odomtest", HTTP_GET, [](AsyncWebServerRequest *request){
+        web_select(ODOMETER);
+        request->send(SPIFFS, "/test.html", String(), false, processor);
+    });
+    server.on("/servotest", HTTP_GET, [](AsyncWebServerRequest *request){
+        web_select(SERVO);
+        request->send(SPIFFS, "/test.html", String(), false, processor);
+    });
     pinMode(batteryMonitor, INPUT);
     batterycheck.start();
 }

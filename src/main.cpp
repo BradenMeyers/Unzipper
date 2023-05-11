@@ -8,8 +8,8 @@
 #include <servoBrake.h>
 #include <serverESP.h>
 #include <accelerometer.h>
-Logger mainlog;
 #include <timer.h>
+#include <testCases.h>
 Timer recoveryTimer;
 Timer atTheTopTimer;
 Timer readyTimeOutTimer;
@@ -59,6 +59,10 @@ void ledStateMachine(){
       digitalWrite(zipLight, LOW);
       digitalWrite(recoveryLight, HIGH);
       break;
+    case TEST:
+      digitalWrite(readyLight, LOW);
+      digitalWrite(zipLight, HIGH);
+      digitalWrite(recoveryLight, HIGH);
   }
 }
 
@@ -78,7 +82,7 @@ bool shouldCheckAtTheTop = true;
 //   for(int times=0; times<=4; times++){
 //   odometerSensorValue = analogRead(odometerSensor);
 //   if(odometerSensorValue > highThreshold and not crossedThreshold){
-//     //mainlog.logln(rotations);
+//     //logger.logln(rotations);
 //     rotations++;
 //     crossedThreshold = true;
 //     Serial.println(rotations);
@@ -102,8 +106,8 @@ void countRotationsHallEffect(int pin){
 
 void startCount(){
   beforeRotations = rotations;
-  mainlog.log("Before Rotations: ");
-  mainlog.log(beforeRotations, true);
+  logger.log("Before Rotations: ", true);
+  logger.log(beforeRotations);
 }
 
 void stopCount(){
@@ -112,10 +116,10 @@ void stopCount(){
     return;
   }
   countToTopLimit = (rotations + (rotations - beforeRotations)) - countToTopLimitOffset;
-  mainlog.log("Count limit: \n");
-  mainlog.log(countToTopLimit);
-  mainlog.log("Rotatons: \n");
-  mainlog.log(rotations);
+  logger.log("Count limit: \n", true);
+  logger.log(countToTopLimit);
+  logger.log("Rotatons: \n", true);
+  logger.log(rotations);
 }
 
 bool isAtTheTop(){
@@ -148,7 +152,7 @@ bool isStalled(){
     return false;
   }
   else{
-    // mainlog.log("Stall turned off", true);
+    // logger.log("Stall turned off", true);
     return false;
   }
 }
@@ -185,14 +189,14 @@ void turnOnMotor(int speed){
 
 void readyAtTheTop(){
   bool servoPositionLock = false;
-  mainlog.checkLogLength();
+  logger.checkLogLength();
   readyTimeOutTimer.start();
   while(!someoneOn(1000)){
     writeServo(STOPPOS);
     if(/* readyTimeOutTimer.getTime() > 120000 or */ wifiSkipToRecovery){
       state = RECOVERY;
       wifiSkipToRecovery = false;
-      mainlog.log("Going up the zip line because ready timed out.", true);
+      logger.log("Wireless command to Recovery", true);
       return;
     }
     while(racecarMode){
@@ -205,6 +209,9 @@ void readyAtTheTop(){
       digitalWrite(buzzer, HIGH);
     else
       digitalWrite(buzzer, LOW);
+    if(state == TEST){
+      return;
+    }
   }
   writeServo(OFFPOS);
   delay(SERVODELAY);
@@ -221,8 +228,8 @@ void movingDown(){
       digitalWrite(buzzer, LOW);
   }
   stopCount();
-  mainlog.log("Total Rotations that were zipped: ");
-  mainlog.log(rotations - beforeRotations, true);
+  logger.log("Total Rotations that were zipped: ", true);
+  logger.log(rotations - beforeRotations);
   state = RECOVERY;
   writeServo(STOPPOS);
   delay(SERVODELAY);
@@ -253,18 +260,18 @@ void moveToTop(){
     if(wifiStopMotor){
       wifiStopMotor = false;
       stopTheMotor();
-      mainlog.log(wifiStopMotorLog, true);
+      logger.log(wifiStopMotorLog, true);
       return;
     }
     if(someoneOn(500)){
       stopTheMotor();
-      mainlog.log(someoneOnLog, true);
+      logger.log(someoneOnLog, true);
       return;
     }
   }
-  writeServo(OFFPOS);
-  delay(SERVODELAY);
-  mainlog.log("Begin speeding motor up", true);
+  writeServo(OFFPOS); //
+  delay(SERVODELAY*1.5);  //
+  logger.log("Begin speeding motor up", true);
   digitalWrite(buzzer, LOW);
   for(int motorSpeed=50; motorSpeed<=motorsMaxSpeed; motorSpeed++){
     turnOnMotor(motorSpeed);
@@ -273,55 +280,55 @@ void moveToTop(){
       countRotationsHallEffect(odometerHallEffect);
       if(someoneOn(50)){
         stopTheMotor();
-        mainlog.log(someoneOnLog, true);
+        logger.log(someoneOnLog, true);
         return;
       }
       if(wifiStopMotor){
         stopTheMotor();
-        mainlog.log(wifiStopMotorLog, true);
+        logger.log(wifiStopMotorLog, true);
         return;
       }
       if((motorSpeed > (motorsMaxSpeed - 30)) and isStalled()){
-        mainlog.log(stalledLog, true);
+        logger.log(stalledLog, true);
         stopTheMotor();
         return;
       }
       if(!movingStable()){
         stopTheMotor();
-        mainlog.log("System is unstable", true);
+        logger.log("System is unstable", true);
         return;
       }
     }
   }
-  mainlog.log("Motor has reached max speed", true);
+  logger.log("Motor has reached max speed", true);
   while(true){
     //Serial.println(rotations);
     countRotationsHallEffect(odometerHallEffect);
     if(half){
       turnOnMotor(motorsMaxSpeed/2);
-      mainlog.log("half speed activated from remote", true);
+      logger.log("half speed activated from remote", true);
     }
     if(someoneOn(50)){
-      mainlog.log(someoneOnLog, true);
+      logger.log(someoneOnLog, true);
       break;
     }
     if(wifiStopMotor){
-      mainlog.log(wifiStopMotorLog, true);
+      logger.log(wifiStopMotorLog, true);
       break;
     }
     if(isStalled()){
-      mainlog.log(stalledLog, true);
+      logger.log(stalledLog, true);
       stopTheMotor();
       break;
     }
     if(!movingStable()){
       stopTheMotor();
-      mainlog.log("System is unstable", true);
+      logger.log("System is unstable", true);
       break;
     }
     // if(isAtTheTop() and not atTheTop){
     //   turnOnMotor(motorsMaxSpeed - 70);
-    //   mainlog.log("Turning motor down because were at the top", true);
+    //   logger.log("Turning motor down because were at the top", true);
     //   atTheTop = true;
     //   atTheTopTimer.start();
     // }
@@ -333,8 +340,10 @@ void updateVariableStrings(){
   if(state == READY){stateStr = "Ready";}
   else if(state == ZIPPING){stateStr = "Zipping";}
   else if(state == RECOVERY){stateStr = "Recovery";}
+  else if(state == RECOVERY){stateStr = "Test";}
   ledStateMachine();
 }
+
 
 void setup(){
   serverSetup();
@@ -356,9 +365,10 @@ void setup(){
 
 void loop(){
   updateVariableStrings();
-  mainlog.log("Current state : ");
-  mainlog.log(stateStr, true);
+  logger.log("Current state : ", true);
+  logger.log(stateStr);
   if(state == READY){readyAtTheTop();}
   else if(state == ZIPPING){movingDown();}
   else if(state == RECOVERY){moveToTop();}
+  else if(state == TEST){testSelect();}
 }

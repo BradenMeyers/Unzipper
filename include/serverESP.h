@@ -3,10 +3,12 @@
 
 #include <Arduino.h>
 #include <string>
+#include <iostream>
 
 #define READY 1
 #define ZIPPING 2
 #define RECOVERY 3
+#define TEST 4
 
 extern byte state;
 extern String stateStr;
@@ -31,6 +33,7 @@ extern String lowThresholdStr;
 void serverSetup();
 
 void serverLoop();
+
 
 class Logger{
 public:
@@ -79,6 +82,83 @@ public:
     logStr = "";
   }
 };
+
+class Blogger{
+public:
+  std::string logStr = "";
+  std::string newLine = "<br>";
+  int i = 0;
+  void log(const char* message, bool ln=false){
+    Serial.print(message);
+    if(ln)
+      logNewLine();
+    else
+      Serial.println();
+    i = logStr.find('-', 0);
+    if( i != std::string::npos) {
+      logStr.insert((i - 1), message);
+    } else {
+      logStr += message;
+    }
+  }
+  void log(String string, bool ln=false){
+    const char* message = string.c_str();
+    Serial.print(message);
+    if(ln)
+      logNewLine();
+    else
+      Serial.println();
+    i = logStr.find('-', 0);
+    if( i != std::string::npos){
+      logStr.insert((i - 1), message);
+    } else {
+      logStr += message;
+    }
+  }
+  void log(int integer, bool ln=false){
+    std::string message = std::to_string(integer);
+    Serial.print(integer);
+    if(ln)
+      logNewLine();
+    else
+      Serial.println();
+    i = logStr.find('-', 0);
+    if( i != std::string::npos){
+      logStr.insert((i - 1), message);
+    } else {
+      logStr += message;
+    }
+  }
+  void log(unsigned long l, bool ln=false){
+    std::string message = std::to_string(l);
+    Serial.print(l);
+    if(ln)
+      logNewLine();
+    else
+      Serial.println();
+    i = logStr.find('-', 0);
+    if( i != std::string::npos){
+      logStr.insert((i - 1), message);
+    } else {
+      logStr += message;
+    }
+  }
+  void logNewLine(){
+    logStr = newLine + logStr;
+    logStr = std::to_string(int(millis() * 0.001)) + logStr;
+    logStr = " - " + logStr;
+  }
+  void checkLogLength(){
+    if(logStr.length() > 1100){
+      logStr = logStr.substr(100);
+    }
+  }
+  void clearLog(){
+    logStr = "";
+  }
+};
+
+extern Blogger logger;
 
 float batteryVoltage();
 

@@ -17,13 +17,43 @@
     .go_up_button{background-color: #0000ff; border: none; color: yellow; padding: 16px 40px;}
     .odometer_settings_button{background-color: #c93877; border: none; color: white; padding: 16px 40px;}
     .log_button{background-color: #c96f10; border: none; color: white; padding: 16px 40px;}
+    .text-color {font-size: 1rem;}
+    /* .state-color {font-size: 1rem;} */
   </style>
+  <script>
+    // Define the text color based on the integer value
+    var floatValue = parseFloat(%VOLTAGE%);
+    // Define the background colors based on the integer value
+    if (floatValue < 17) {
+        textColor = 'red';
+    } else if (floatValue < 19) {
+        textColor = 'orange';
+    } else {
+        textColor = 'green';
+    }
+     // Define the background colors based on the string value
+    // if (%STATE% == 'READY') {
+    //     stateColor = 'green';
+    // } else if (%STATE% == 'ZIPPING') {
+    //     stateColor = 'blue';
+    // } else {
+    //     stateColor = 'red';
+    // }
+    // Create a new style element and add it to the head
+    var style = document.createElement('style');
+    style.type = 'text/css';
+    style.innerHTML = '.text-color { background-color: ' + textColor + '; }';
+    // style.innerHTML = '.state-color { background-color: ' + stateColor + '; }';
+    document.head.appendChild(style);
+  </script>
 </head>
 <body>
   <h2>Zip Line Controls</h2>
-  <p>State: %STATE% Direction: %DIRECTION%</p>
-  <p>Battery Voltage: %VOLTAGE%</p>
+  <p>State: %STATE%   Direction: %DIRECTION%</p>
+  <!-- <bat>Battery Voltage: %VOLTAGE%</bat> -->
+  <p class="text-color">Battery Voltage: %VOLTAGE%</p>
   <p>Temperature: %TEMPERATURE%</p>
+  <!-- <p class="text-color">This line of text will change color based on the integer value.</p> -->
   <p><button id="stop_button" class="button stop_button" onclick="buttonClickSend(this)">Stop Motor</button></p>
   <p><button id="direction_button" class="button direction_button" onclick="buttonClickSend(this)">Direction</button></p>
   <p><button id="go_up_button" class="button go_up_button" onclick="buttonClickSend(this)">Go Up</button></p>
@@ -32,6 +62,7 @@
   <p><span>After Zip Delay (in seconds): %AFTERZIPDELAY%</span></p>
   <p><input type="range" onchange="sliderSend(this)" id="afterZipDelaySlider" min="0.0" max="20.0" value="%AFTERZIPDELAY%" step="0.5" class="slider"></p>
   <p><button id="odometer_settings_button" class="button odometer_settings_button" onclick="location.href = '/odometersettingsclick';">Odometer Settings</button></p>
+  <p><button id="test_page" class="button go_up_button" onclick="location.href = '/testclick';">Test Cases</button></p>
   <p><button id="log_button" class="button log_button" onclick="location.href = '/logclick';">Log Page</button></p>
   <!-- <p><button id="server_button" class="button server_button" onclick="location.href = '/serverclick';">Log Page</button></p> -->
 <script>
