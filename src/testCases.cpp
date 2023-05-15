@@ -6,6 +6,7 @@
 #include <testCases.h>
 #include <serverESP.h>
 #include <accelerometer.h>
+#include <main.h>
 Blogger testLogger;
 Timer accelerometerTest;
 Timer dataOverload;
@@ -62,7 +63,7 @@ void odometerLoop(){
   countRotationsHallEffecttest2();
   //Serial.println(digitalRead(hallEffectPin1));
   //Serial.println(digitalRead(hallEffectPin2));
-  delay(1000);
+  //delay(1000);
 }
 
 //SERVO TESTS
@@ -160,6 +161,9 @@ void web_select(int testSel){
 void testSelect(){
     testLogger.checkLogLength();
     while(state == TEST){
+        if(testState != MOTOR){
+            turnOnMotor(0);
+        }
         switch (testState)
         {
         case MOTOR:

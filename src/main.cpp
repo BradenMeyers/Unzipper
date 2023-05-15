@@ -10,6 +10,7 @@
 #include <accelerometer.h>
 #include <timer.h>
 #include <testCases.h>
+#include <main.h>
 Timer recoveryTimer;
 Timer atTheTopTimer;
 Timer readyTimeOutTimer;
@@ -226,6 +227,9 @@ void movingDown(){
       digitalWrite(buzzer, HIGH);
     else
       digitalWrite(buzzer, LOW);
+    if(state == TEST){
+      return;
+    }
   }
   stopCount();
   logger.log("Total Rotations that were zipped: ", true);
@@ -295,7 +299,7 @@ void moveToTop(){
       }
       if(!movingStable()){
         stopTheMotor();
-        logger.log("System is unstable", true);
+        logger.log("System is unstable while moving", true);
         return;
       }
     }
@@ -323,7 +327,7 @@ void moveToTop(){
     }
     if(!movingStable()){
       stopTheMotor();
-      logger.log("System is unstable", true);
+      logger.log("System is unstable while moving", true);
       break;
     }
     // if(isAtTheTop() and not atTheTop){

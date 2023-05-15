@@ -145,7 +145,7 @@ void setStable(){
 
 }
 
-bool checkInstantStable(){
+bool checkInstantStable(bool x=true, bool y=true, bool z=true){
     static bool stableX = false;
     static bool stableY = false;
     static bool stableZ = false;
@@ -163,7 +163,7 @@ bool checkInstantStable(){
     else
         stableZ = false;
 
-    return stableX and stableY and stableZ;
+    return (!x or stableX) and (!y or stableY) and (!z or stableZ);
 }
 
 bool checkStable(int timeStable){
@@ -193,7 +193,7 @@ bool checkStable(int timeStable){
 Timer movingTimer;
 
 bool movingStable(){
-    if(checkInstantStable()){
+    if(checkInstantStable(false, false, true)){
         movingTimer.start();    //reset the timer every time the system reports that it is stable
         return true;
     }

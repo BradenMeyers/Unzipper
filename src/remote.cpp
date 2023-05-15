@@ -4,7 +4,7 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include <serverESP.h>
-
+#include <testCases.h>
 Timer sendData;
 Timer dataRecTimer;
 Timer racecarTimer;
@@ -54,10 +54,12 @@ bool racecarMode = false;
 int racecarSpeed = 0;
 
 void updateOutgoing(){
-  if(directionStr == "DOWN")
+  if(directionStr == "DOWN"){
     outgoing.dir = 1;
-  else
+  }
+  else{
     outgoing.dir = 0;
+  }
   outgoing.max = motorsMaxSpeed;
   outgoing.zipDelay = afterZipDelay;
 }
@@ -149,21 +151,21 @@ void compareMessages(){
     sentFirstMessage = false;
     sendRequest = true;
     failedAttempts = 0;
-    Serial.print("triggered on direction");
+    Serial.println("triggered on direction"); 
   }
   if(motorsMaxSpeed != outgoing.max){
-    Serial.print("triggered on max speed change");
+    Serial.println("triggered on max speed change");
     sentFirstMessage = false;
     sendRequest = true;
     failedAttempts = 0;
-
   }
   if(afterZipDelay != outgoing.zipDelay){
-    Serial.print("triggered onzip delay change");
+    Serial.println("triggered onzip delay change");
     sentFirstMessage = false;
     sendRequest = true;    
     failedAttempts = 0;
-  }
+  }                     // not sure if the outgoing change could happen in between check and the update. 
+  updateOutgoing();  //Needs to update the outgoing packet so it wont trigger again.
 }
  
 void remoteSetup() {
@@ -193,17 +195,6 @@ void remoteSetup() {
 void remoteLoop() {
   if(dataRecTimer.getTime() > 500)    //dont check if the messages are different until data is recieved, it runs the compare too fast
     compareMessages();
-  // if(sendData.getTime() > 500 && !sentFirstMessage){
-  //   updateOutgoing();
-  //   esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &outgoing, sizeof(outgoing));
-  //   if (result == ESP_OK) {
-  //     Serial.println("Sent with success");
-  //   }
-  //   else {
-  //     Serial.println("Error sending the data");
-  //   }
-  //   sendData.start();
-  // }
   if((sendData.getTime() > 250) && (sendRequest) && (failedAttempts < 10)){
     updateOutgoing();
     esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &outgoing, sizeof(outgoing));
