@@ -11,27 +11,22 @@
 #include <timer.h>
 #include <testCases.h>
 #include <main.h>
+#include <odometer.h>
 Timer recoveryTimer;
 Timer atTheTopTimer;
 Timer readyTimeOutTimer;
-Timer stallTimer;
 Timer handleBarTimer;
-Timer odometerTimer;
-#define DELAYODOMETER 5
+
 
 byte buzzer = 27;
 byte motorDirection = 12;  //updated on mar 17
 byte motor = 26;  //updated on mar 17
 byte handleBarSensor = 17;  //was 19
-byte odometerHallEffect = 33;
-#define ODOMETERSTALLRATE 160
 
 #define motorChannel 1
 #define resolution 8
 #define freq 5000
 #define RECOVERY_TO_READY_AFTER_BEEN_GRABBED_TIME 1700
-
-
 
 void ledStateMachine(){
   static byte readyLight = 25;
@@ -64,97 +59,6 @@ void ledStateMachine(){
       digitalWrite(readyLight, LOW);
       digitalWrite(zipLight, HIGH);
       digitalWrite(recoveryLight, HIGH);
-  }
-}
-
-//bool atTheTop = false;
-//bool someonOnStateChanged = false;
-
-
-unsigned long rotations = 0;
-unsigned long beforeRotations;
-unsigned long countToTopLimit;
-unsigned long countToTopLimitOffset = 20;
-
-bool shouldCheckAtTheTop = true;
-
-// void countRotations(){
-//   static bool crossedThreshold = false;
-//   for(int times=0; times<=4; times++){
-//   odometerSensorValue = analogRead(odometerSensor);
-//   if(odometerSensorValue > highThreshold and not crossedThreshold){
-//     //logger.logln(rotations);
-//     rotations++;
-//     crossedThreshold = true;
-//     Serial.println(rotations);
-//   }
-//   else if(odometerSensorValue < lowThreshold){crossedThreshold = false;}
-//   }
-// }
-
-void countRotationsHallEffect(int pin){
-  int magneticValue = digitalRead(pin);
-  static int lastValue = digitalRead(pin);
-  if(odometerTimer.getTime() > DELAYODOMETER){
-    if(magneticValue != lastValue){
-      rotations ++;
-      lastValue = magneticValue;
-      odometerTimer.start();
-      // Serial.println(rotations);
-    }
-  }
-}
-
-void startCount(){
-  beforeRotations = rotations;
-  logger.log("Before Rotations: ", true);
-  logger.log(beforeRotations);
-}
-
-void stopCount(){
-  if(rotations - beforeRotations < 10){   //This is if someone pulls it at the top and stuff dont actully go down
-    countToTopLimit = rotations + 500;
-    return;
-  }
-  countToTopLimit = (rotations + (rotations - beforeRotations)) - countToTopLimitOffset;
-  logger.log("Count limit: \n", true);
-  logger.log(countToTopLimit);
-  logger.log("Rotatons: \n", true);
-  logger.log(rotations);
-}
-
-bool isAtTheTop(){
-  
-  if(shouldCheckAtTheTop){
-    if(rotations > countToTopLimit){return true;}
-  }
-  return false;
-}
-
-bool isStalled(){
-  static unsigned long stallRotationCount;
-  countRotationsHallEffect(odometerHallEffect);
-  // If there have been no rotations in less than 160 milliseconds will return true, otherwise false
-  if(stall){  
-    if(not stallTimer.started){
-      stallTimer.start();
-      stallTimer.started = true;
-      stallRotationCount = rotations;
-      return false;
-    }
-    else if(stallTimer.getTime() > ODOMETERSTALLRATE){
-      stallTimer.started = false;
-      // Serial.print("rotations per check:");
-      // Serial.println(rotations - stallRotationCount);
-      if(rotations - stallRotationCount < 1){
-        return true;
-      }
-    }
-    return false;
-  }
-  else{
-    // logger.log("Stall turned off", true);
-    return false;
   }
 }
 
@@ -193,7 +97,7 @@ void readyAtTheTop(){
   logger.checkLogLength();
   readyTimeOutTimer.start();
   while(!someoneOn(1000)){
-    writeServo(STOPPOS);
+    //writeServo(STOPPOS);      //Uncomment these lines out for the servo to be on during ready mode
     if(/* readyTimeOutTimer.getTime() > 120000 or */ wifiSkipToRecovery){
       state = RECOVERY;
       wifiSkipToRecovery = false;
@@ -201,10 +105,12 @@ void readyAtTheTop(){
       return;
     }
     while(racecarMode){
+      writeServo(OFFPOS); //take break off 
       turnOnMotor(racecarSpeed);
       remoteLoop();
       serverLoop();
     }
+    //writeServo(STOPPOS);  //uncomment this line when you turn servo on in ready mode
     turnOnMotor(0);
     if(beep == 1)
       digitalWrite(buzzer, HIGH);
@@ -214,7 +120,7 @@ void readyAtTheTop(){
       return;
     }
   }
-  writeServo(OFFPOS);
+  //writeServo(OFFPOS);    //Uncomment these lines out for the servo to be on during ready mode
   delay(SERVODELAY);
   state = ZIPPING;
 }
@@ -222,7 +128,7 @@ void readyAtTheTop(){
 void movingDown(){
   startCount();
   while(someoneOn(1000)){
-    countRotationsHallEffect(odometerHallEffect);
+    loopOdometer();
     if(beep == 1)
       digitalWrite(buzzer, HIGH);
     else
@@ -232,8 +138,6 @@ void movingDown(){
     }
   }
   stopCount();
-  logger.log("Total Rotations that were zipped: ", true);
-  logger.log(rotations - beforeRotations);
   state = RECOVERY;
   writeServo(STOPPOS);
   delay(SERVODELAY);
@@ -281,7 +185,7 @@ void moveToTop(){
     turnOnMotor(motorSpeed);
     recoveryTimer.start();
     while(recoveryTimer.getTime() < motorAccelerationTimeLimit){
-      countRotationsHallEffect(odometerHallEffect);
+      loopOdometer();
       if(someoneOn(50)){
         stopTheMotor();
         logger.log(someoneOnLog, true);
@@ -307,7 +211,7 @@ void moveToTop(){
   logger.log("Motor has reached max speed", true);
   while(true){
     //Serial.println(rotations);
-    countRotationsHallEffect(odometerHallEffect);
+    loopOdometer();
     if(half){
       turnOnMotor(motorsMaxSpeed/2);
       logger.log("half speed activated from remote", true);
@@ -353,7 +257,6 @@ void setup(){
   serverSetup();
   Serial.begin(112500);
   analogReadResolution(12);
-  pinMode(odometerHallEffect, INPUT);
   pinMode(handleBarSensor, INPUT_PULLUP);
   pinMode(buzzer, OUTPUT);
   pinMode(motorDirection, OUTPUT);
@@ -365,6 +268,7 @@ void setup(){
   remoteSetup();
   setupAccel();
   servoSetup();
+  setupOdometer();
 }
 
 void loop(){
