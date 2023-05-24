@@ -89,6 +89,7 @@ public:
   std::string newLine = "<br>";
   int i = 0;
   void log(const char* message, bool ln=false){
+    checkLogLength();   //the esp was reseting possibly because the message was getting too long. 
     Serial.print(message);
     if(ln)
       logNewLine();
@@ -103,6 +104,7 @@ public:
   }
   void log(String string, bool ln=false){
     const char* message = string.c_str();
+    checkLogLength();
     Serial.print(message);
     if(ln)
       logNewLine();
@@ -117,6 +119,7 @@ public:
   }
   void log(int integer, bool ln=false){
     std::string message = std::to_string(integer);
+    checkLogLength();
     Serial.print(integer);
     if(ln)
       logNewLine();
@@ -131,6 +134,7 @@ public:
   }
   void log(unsigned long l, bool ln=false){
     std::string message = std::to_string(l);
+    checkLogLength();
     Serial.print(l);
     if(ln)
       logNewLine();

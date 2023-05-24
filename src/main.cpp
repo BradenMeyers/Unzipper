@@ -17,7 +17,6 @@ Timer atTheTopTimer;
 Timer readyTimeOutTimer;
 Timer handleBarTimer;
 
-
 byte buzzer = 27;
 byte motorDirection = 12;  //updated on mar 17
 byte motor = 26;  //updated on mar 17
@@ -27,6 +26,11 @@ byte handleBarSensor = 17;  //was 19
 #define resolution 8
 #define freq 5000
 #define RECOVERY_TO_READY_AFTER_BEEN_GRABBED_TIME 1700
+
+static int motorAccelerationTimeLimit = 25;  //this determines how fast the motor increses its speed by one PWM value
+const char* someoneOnLog = "Stopping motor because someone was on";
+const char* wifiStopMotorLog = "Stopping motor because wifi";
+const char* stalledLog = "Stopping motor because it is stalled";
 
 void ledStateMachine(){
   static byte readyLight = 25;
@@ -97,6 +101,7 @@ void readyAtTheTop(){
   logger.checkLogLength();
   readyTimeOutTimer.start();
   while(!someoneOn(1000)){
+    writeServo(OFFPOS);
     //writeServo(STOPPOS);      //Uncomment these lines out for the servo to be on during ready mode
     if(/* readyTimeOutTimer.getTime() > 120000 or */ wifiSkipToRecovery){
       state = RECOVERY;
@@ -156,54 +161,61 @@ void stopTheMotor(){
   state = READY;
 }
 
+bool initialEscapeRecovery(){
+  if(wifiStopMotor){
+      wifiStopMotor = false;
+      stopTheMotor();
+      logger.log(wifiStopMotorLog, true);
+      return true;
+    }
+  else if(someoneOn(500)){
+      stopTheMotor();
+      logger.log(someoneOnLog, true);
+      return true;
+  }
+  else
+    return false;
+}
+
+bool escapeRecovery(int motorSpeedparam){
+  loopOdometer();  //does this need to be somewhere else? 
+  if(someoneOn(50)){
+      logger.log(someoneOnLog, true);
+      return true;
+    }
+    if(wifiStopMotor){
+      logger.log(wifiStopMotorLog, true);
+      return true;
+    }
+    if((motorSpeedparam > (motorsMaxSpeed - 30)) and isStalled()){
+      logger.log(stalledLog, true);
+      return true;
+    }
+    if(!movingStable()){
+      logger.log("System is unstable while moving", true);
+      return true;
+    }
+  return false;
+}
+
 void moveToTop(){
-  const char* someoneOnLog = "Stopping motor because someone was on";
-  const char* wifiStopMotorLog = "Stopping motor because wifi";
-  const char* stalledLog = "Stopping motor because it is stalled";
-  static int motorAccelerationTimeLimit = 25;
   digitalWrite(buzzer, HIGH);
   //atTheTop = false;
   recoveryTimer.start();
   while(!checkStable(afterZipDelay*1000)){  //!checkStable(afterZipDelay*1000)  //recoveryTimer.getTime() < afterZipDelay*1000
-    if(wifiStopMotor){
-      wifiStopMotor = false;
-      stopTheMotor();
-      logger.log(wifiStopMotorLog, true);
+    if(initialEscapeRecovery())
       return;
-    }
-    if(someoneOn(500)){
-      stopTheMotor();
-      logger.log(someoneOnLog, true);
-      return;
-    }
   }
-  writeServo(OFFPOS); //
-  delay(SERVODELAY*1.5);  //
+  writeServo(OFFPOS); 
+  delay(SERVODELAY*1.5);  
   logger.log("Begin speeding motor up", true);
   digitalWrite(buzzer, LOW);
   for(int motorSpeed=50; motorSpeed<=motorsMaxSpeed; motorSpeed++){
     turnOnMotor(motorSpeed);
     recoveryTimer.start();
     while(recoveryTimer.getTime() < motorAccelerationTimeLimit){
-      loopOdometer();
-      if(someoneOn(50)){
+      if(escapeRecovery(motorSpeed)){
         stopTheMotor();
-        logger.log(someoneOnLog, true);
-        return;
-      }
-      if(wifiStopMotor){
-        stopTheMotor();
-        logger.log(wifiStopMotorLog, true);
-        return;
-      }
-      if((motorSpeed > (motorsMaxSpeed - 30)) and isStalled()){
-        logger.log(stalledLog, true);
-        stopTheMotor();
-        return;
-      }
-      if(!movingStable()){
-        stopTheMotor();
-        logger.log("System is unstable while moving", true);
         return;
       }
     }
@@ -211,27 +223,11 @@ void moveToTop(){
   logger.log("Motor has reached max speed", true);
   while(true){
     //Serial.println(rotations);
-    loopOdometer();
     if(half){
       turnOnMotor(motorsMaxSpeed/2);
       logger.log("half speed activated from remote", true);
     }
-    if(someoneOn(50)){
-      logger.log(someoneOnLog, true);
-      break;
-    }
-    if(wifiStopMotor){
-      logger.log(wifiStopMotorLog, true);
-      break;
-    }
-    if(isStalled()){
-      logger.log(stalledLog, true);
-      stopTheMotor();
-      break;
-    }
-    if(!movingStable()){
-      stopTheMotor();
-      logger.log("System is unstable while moving", true);
+    if(escapeRecovery(motorsMaxSpeed)){
       break;
     }
     // if(isAtTheTop() and not atTheTop){
@@ -251,7 +247,6 @@ void updateVariableStrings(){
   else if(state == RECOVERY){stateStr = "Test";}
   ledStateMachine();
 }
-
 
 void setup(){
   serverSetup();

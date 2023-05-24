@@ -175,17 +175,17 @@ bool checkStable(int timeStable){
     if(checkInstantStable()){
         if(stableTimer.getTime() > timeStable){
             init = false;
-            testLogger.log("The zipline is stable");
+            // testLogger.log("The zipline is stable");
             return true;
         }
         else{
-            testLogger.log("Zipline is stable - Wait");
+            // testLogger.log("Zipline is stable - Wait");
             return false;
         }
     }
     else{
         stableTimer.start();
-        testLogger.log("the zipline is not stable");
+        // testLogger.log("the zipline is not stable");
         return false;
     }
 }

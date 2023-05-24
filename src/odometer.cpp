@@ -43,6 +43,7 @@ public:
     int pin;
     unsigned long rotations = 0;
     unsigned long beforeRotations;
+    unsigned long stallRotationCount;
     Timer stallTimer;
     Timer odometerTimer;
 
@@ -67,8 +68,6 @@ public:
     }
 
     bool isStalledIndiv(){
-        static unsigned long stallRotationCount;
-        countRotationsHallEffect();
         // If there have been no rotations in less than 160 milliseconds will return true, otherwise false
         if(stall){  
             if(not stallTimer.started){
@@ -79,8 +78,8 @@ public:
             }
             else if(stallTimer.getTime() > ODOMETERSTALLRATE){
                 stallTimer.started = false;
-                // Serial.print("rotations per check:");
-                // Serial.println(rotations - stallRotationCount);
+                //Serial.print("rotations per check:");
+                //Serial.println(rotations - stallRotationCount);
                 if(rotations - stallRotationCount < 1){
                     return true;
                 }
@@ -88,7 +87,8 @@ public:
             return false;
         }
         else{
-            // logger.log("Stall turned off", true);
+            //logger.log("Stall turned off", true);
+            Serial.println("stall off");
             return false;
         }
     }
@@ -148,7 +148,13 @@ unsigned long stopCount(){
 }
 
  bool isStalled(){
-    return mainHE.isStalledIndiv() and backupHE.isStalledIndiv();
+    bool mainStall = mainHE.isStalledIndiv();
+    if(mainStall)
+        logger.log("triggered stall on main", true);
+    bool backupStall = backupHE.isStalledIndiv();
+    if(backupStall)
+        logger.log("triggered stall on backup", true);
+    return (mainStall or backupStall);
  }
 
 void setupOdometer(){
@@ -159,4 +165,5 @@ void setupOdometer(){
 void loopOdometer(){
     mainHE.countRotationsHallEffect();
     backupHE.countRotationsHallEffect();
+    //Serial.println("i am here");
 }

@@ -70,8 +70,9 @@ int ticksToUs(int ticks)
 }
 
 void servoSetup(){
+    writeServo(OFFPOS);
     attachServo(SERVOPIN);
+    writeServo(OFFPOS);
     Serial.println("Servo setup");
     delay(100);
-    writeServo(90);
 }
