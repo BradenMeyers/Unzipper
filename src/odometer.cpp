@@ -6,9 +6,11 @@
 
 
 #define DELAYODOMETER 5
+#define ODOMETERSTALLRATE 160
 byte odometerHallEffect = 33;
 byte odometerHallBackup = 14;
-#define ODOMETERSTALLRATE 160
+bool overideMain = false;
+bool overideBackup = false;
 
 // unsigned long countToTopLimit;
 // unsigned long countToTopLimitOffset = 20;
@@ -148,10 +150,10 @@ unsigned long stopCount(){
 }
 
  bool isStalled(){
-    bool mainStall = mainHE.isStalledIndiv();
+    bool mainStall = (mainHE.isStalledIndiv() and !overideMain);
     if(mainStall)
         logger.log("triggered stall on main", true);
-    bool backupStall = backupHE.isStalledIndiv();
+    bool backupStall = (backupHE.isStalledIndiv() and !overideBackup);
     if(backupStall)
         logger.log("triggered stall on backup", true);
     return (mainStall or backupStall);
@@ -166,4 +168,13 @@ void loopOdometer(){
     mainHE.countRotationsHallEffect();
     backupHE.countRotationsHallEffect();
     //Serial.println("i am here");
+}
+
+void disableOdometer(byte HEpin){
+    if (HEpin == odometerHallBackup){
+        overideBackup = true;
+    }
+    else if(HEpin == odometerHallEffect){
+        overideMain = true;
+    }
 }

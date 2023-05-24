@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <string>
-#include <iostream>
+// #include <iostream>
 
 #define READY 1
 #define ZIPPING 2
@@ -12,7 +12,6 @@
 
 extern byte state;
 extern String stateStr;
-extern int serverState;
 
 extern byte odometerSensor;
 extern int odometerSensorValue;
@@ -127,6 +126,7 @@ public:
       Serial.println();
     i = logStr.find('-', 0);
     if( i != std::string::npos){
+      Serial.println("crashed here");
       logStr.insert((i - 1), message);
     } else {
       logStr += message;
@@ -153,8 +153,9 @@ public:
     logStr = " - " + logStr;
   }
   void checkLogLength(){
-    if(logStr.length() > 1100){
-      logStr = logStr.substr(100);
+    if(logStr.length() > 1000){
+      logStr.resize(100);
+      Serial.println("shortened log");
     }
   }
   void clearLog(){

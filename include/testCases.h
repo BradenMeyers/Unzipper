@@ -4,16 +4,13 @@
 #include <string.h>
 #include <serverESP.h>
 
-void accelerometerSetup();
 void accelerometerLoop();
 
-void hallSetup();
-void hallLoop();
+void odometerSetup();
+void odometerLoop();
 
-void servoSetupTest();
 void servoLoop();
 
-void motorSetup();
 void motorLoop();
 
 void testSelect();

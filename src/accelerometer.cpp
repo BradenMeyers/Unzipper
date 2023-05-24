@@ -4,6 +4,9 @@
 #include <timer.h>
 #include <accelerometer.h>
 #include <testCases.h>
+#include <Preferences.h>
+
+Preferences accelerometerStore;
 
 Adafruit_MPU6050 mpu;
 sensors_event_t a, g, temp;
@@ -128,6 +131,12 @@ void read_acc(bool print=false){
     }
 }
 
+void storeStableValues(){
+    accelerometerStore.putFloat("upX", uprightX);
+    accelerometerStore.putFloat("upY", uprightY);
+    accelerometerStore.putFloat("upZ", uprightZ);
+}
+
 void setStable(){
     float count = 25;
     uprightX = 0;
@@ -142,8 +151,9 @@ void setStable(){
     uprightX = uprightX/count;
     uprightY = uprightY/count;
     uprightZ = uprightZ/count;
-
+    storeStableValues();
 }
+
 
 bool checkInstantStable(bool x=true, bool y=true, bool z=true){
     static bool stableX = false;
@@ -208,5 +218,9 @@ bool movingStable(){
 
 void setupAccel(){
     initMPU();
+    accelerometerStore.begin("accel-store", false);
+    uprightX = accelerometerStore.getFloat("upX", 0);
+    uprightY = accelerometerStore.getFloat("upY", 0);
+    uprightZ = accelerometerStore.getFloat("upZ", 0);
 }
 

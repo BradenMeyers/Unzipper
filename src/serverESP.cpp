@@ -6,6 +6,7 @@
 #include <SPIFFS.h>
 #include <accelerometer.h>
 #include <testCases.h>
+#include <odometer.h>
 
 Blogger logger;
 
@@ -26,8 +27,6 @@ Timer batterycheck;
 
 const char* ssid = "Zip-Line-Controls";
 const char* password = "123456789";
-
-int serverState = 0;    //0 do nothing, 1 start, 2 end
 
 byte batteryMonitor = 34;
 byte odometerSensor = 33;
@@ -69,7 +68,6 @@ String processor(const String& var){
   else if(var == "STATE"){return stateStr;}
   else if(var == "DIRECTION"){return directionStr;}
   else if(var == "AFTERZIPDELAY"){return afterZipDelayStr;}
-  else if(var == "CURRENTIRVALUE"){return String(analogRead(odometerSensor));}
   else if(var == "LOWTHRESHOLD"){return lowThresholdStr;}
   else if(var == "HIGHTHRESHOLD"){return highThresholdStr;}
   else if(var == "UPRIGHTERROR"){return String(uprightError);}
@@ -190,26 +188,16 @@ void serverSetup(){
         request->send(SPIFFS, "/logger.html", String(), false, processor);
     });
 
-    server.on("/lowthreshold", HTTP_GET, [] (AsyncWebServerRequest *request){
-        if (request->hasParam("value")) {
-        lowThresholdStr = request->getParam("value")->value();
-        lowThreshold = lowThresholdStr.toInt();
-        logger.log("low threshold is now: ", true);
-        logger.log(lowThresholdStr);
-        }
-        request->send(200, "text/plain", "OK");
+    server.on("/disableMainHE", HTTP_GET, [](AsyncWebServerRequest *request){
+        disableOdometer(odometerHallEffect);
+        logger.log("Disabled main HE sensor", true);
+        request->send(SPIFFS, "/odometer.html", String(), false, processor);
     });
-
-    server.on("/highthreshold", HTTP_GET, [] (AsyncWebServerRequest *request){
-        if (request->hasParam("value")) {
-        highThresholdStr = request->getParam("value")->value();
-        highThreshold = highThresholdStr.toInt();
-        logger.log("high threshold is now: ", true);
-        logger.log(highThresholdStr);
-        }
-        request->send(200, "text/plain", "OK");
+    server.on("/disablebackupHE", HTTP_GET, [](AsyncWebServerRequest *request){
+        disableOdometer(odometerHallBackup);
+        logger.log("Disabled backup HE sensor", true);
+        request->send(SPIFFS, "/odometer.html", String(), false, processor);
     });
-
     server.on("/resetStable", HTTP_GET, [](AsyncWebServerRequest *request){
         setStable();
         logger.log("Stable reset", true);
