@@ -27,7 +27,7 @@ void loopGPS(){
       Serial.print(gps.location.lat(), 6);
       Serial.print(" Longitude= "); 
       Serial.println(gps.location.lng(), 6);
-      // Number of satellites in use (u32)
+      // Number of satellites in use (u32) hi
       Serial.print("Number of satellites in use = "); 
       Serial.println(gps.satellites.value());
 
