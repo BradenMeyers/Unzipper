@@ -12,6 +12,7 @@
 #include <testCases.h>
 #include <main.h>
 #include <odometer.h>
+#include <gps.h>
 Timer recoveryTimer;
 Timer atTheTopTimer;
 Timer readyTimeOutTimer;
@@ -248,7 +249,7 @@ void updateVariableStrings(){
   ledStateMachine();
 }
 
-void setup(){
+void setupp(){
   serverSetup();
   Serial.begin(112500);
   analogReadResolution(12);
@@ -264,9 +265,14 @@ void setup(){
   setupAccel();
   servoSetup();
   setupOdometer();
+  setupGPS();
 }
 
-void loop(){
+void setup(){
+  setupGPS();
+}
+
+void looop(){
   updateVariableStrings();
   logger.log("Current state : ", true);
   logger.log(stateStr);
@@ -274,4 +280,8 @@ void loop(){
   else if(state == ZIPPING){movingDown();}
   else if(state == RECOVERY){moveToTop();}
   else if(state == TEST){testSelect();}
+}
+
+void loop(){
+  loopGPS();
 }

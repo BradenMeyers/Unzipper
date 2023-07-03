@@ -54,7 +54,7 @@ AsyncWebServer server(80);
 
 float batteryVoltage(){
     float reading = analogRead(batteryMonitor);
-    reading = ((reading)/(4095)) * 19.68;
+    reading = ((reading)/(4095)) * 25.6;  //calibrated on May 24 2023
     static float voltage = 19.68;
     float alpha = 0.8;
     voltage = voltage*alpha + (1-alpha)*reading;
