@@ -21,7 +21,7 @@ Timer handleBarTimer;
 byte buzzer = 27;
 byte motorDirection = 12;  //updated on mar 17
 byte motor = 26;  //updated on mar 17
-byte handleBarSensor = 17;  //was 19
+byte handleBarSensor = 4;  //was 17 but switched cuz Serial on JULY 4th
 
 #define motorChannel 1
 #define resolution 8
@@ -67,9 +67,15 @@ void ledStateMachine(){
   }
 }
 
-bool someoneOn(int timeLimit){
+void backgroundProcesses(){
   serverLoop();
   remoteLoop();
+  loopGPS();
+  // Serial.println("processing");
+}
+
+bool someoneOn(int timeLimit){
+  backgroundProcesses();
   static byte handleBarSensorValue = 0;
   if(digitalRead(handleBarSensor) != handleBarSensorValue){
     if(handleBarTimer.getTime() > timeLimit){
@@ -101,9 +107,11 @@ void readyAtTheTop(){
   bool servoPositionLock = false;
   logger.checkLogLength();
   readyTimeOutTimer.start();
+  writeServo(OFFPOS);
   while(!someoneOn(1000)){
-    writeServo(OFFPOS);
-    //writeServo(STOPPOS);      //Uncomment these lines out for the servo to be on during ready mode
+    backgroundProcesses();
+    //writeServo(OFFPOS);
+    //writeServo(stopPosServo);      //Uncomment these lines out for the servo to be on during ready mode
     if(/* readyTimeOutTimer.getTime() > 120000 or */ wifiSkipToRecovery){
       state = RECOVERY;
       wifiSkipToRecovery = false;
@@ -113,10 +121,9 @@ void readyAtTheTop(){
     while(racecarMode){
       writeServo(OFFPOS); //take break off 
       turnOnMotor(racecarSpeed);
-      remoteLoop();
-      serverLoop();
+      backgroundProcesses();
     }
-    //writeServo(STOPPOS);  //uncomment this line when you turn servo on in ready mode
+    //writeServo(stopPosServo);  //uncomment this line when you turn servo on in ready mode
     turnOnMotor(0);
     if(beep == 1)
       digitalWrite(buzzer, HIGH);
@@ -145,7 +152,7 @@ void movingDown(){
   }
   stopCount();
   state = RECOVERY;
-  writeServo(STOPPOS);
+  writeServo(stopPosServo);
   delay(SERVODELAY);
 }
 
@@ -249,7 +256,7 @@ void updateVariableStrings(){
   ledStateMachine();
 }
 
-void setupp(){
+void setup(){
   serverSetup();
   Serial.begin(112500);
   analogReadResolution(12);
@@ -262,17 +269,15 @@ void setupp(){
   ledcAttachPin(motor, motorChannel);
   ledcWrite(motorChannel, 0);
   remoteSetup();
-  setupAccel();
+  //setupAccel();
   servoSetup();
   setupOdometer();
   setupGPS();
+  // Serial.println("i made it here");
 }
 
-void setup(){
-  setupGPS();
-}
 
-void looop(){
+void loop(){
   updateVariableStrings();
   logger.log("Current state : ", true);
   logger.log(stateStr);
@@ -280,8 +285,4 @@ void looop(){
   else if(state == ZIPPING){movingDown();}
   else if(state == RECOVERY){moveToTop();}
   else if(state == TEST){testSelect();}
-}
-
-void loop(){
-  loopGPS();
 }

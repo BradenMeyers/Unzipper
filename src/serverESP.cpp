@@ -7,6 +7,8 @@
 #include <accelerometer.h>
 #include <testCases.h>
 #include <odometer.h>
+#include <gps.h>
+#include <servoBrake.h>
 
 Blogger logger;
 
@@ -46,6 +48,8 @@ String directionStr = "UP";
 String motorMaxSpeedStr = String(motorsMaxSpeed);
 String afterZipDelayStr = String(afterZipDelay);  //cause actual variable is in miliseconds but wifi is in seconds
 String uprightErrorStr = String(uprightError);
+String gpsErrorStr = String(gpsError);
+String stopPosServoStr = String(stopPosServo);
 
 bool wifiStopMotor = false;
 bool wifiSkipToRecovery = false;
@@ -75,6 +79,9 @@ String processor(const String& var){
   else if(var == "TEMPERATURE") return String(getTemperature());
   else if(var == "LOGSTRING"){return logger.logStr.c_str();}
   else if(var == "TESTLOG"){return testLogger.logStr.c_str();}
+  else if(var == "SATLOCK"){return String(satelliteLock());}
+  else if(var == "GPSERROR"){return String(gpsError);}
+  else if(var == "SERVOANGLE"){return String(stopPosServo);}
   return String();
 }
 
@@ -84,6 +91,8 @@ void storeValues(){
     preferences.putUInt("max", motorsMaxSpeed);
     preferences.putFloat("zDelay", afterZipDelay);
     preferences.putFloat("uError", uprightError);
+    preferences.putFloat("gpsError", gpsError);
+    preferences.putUInt("servoAngle", stopPosServo);
 }
 
 void initSPIFFS() {
@@ -100,11 +109,15 @@ void serverSetup(){
     lowThreshold = preferences.getUInt("lower", 1000); //Lower IR threshold
     afterZipDelay = preferences.getFloat("zDelay", 10);  //Delay after the zipping state
     uprightError = preferences.getFloat("uError", 1.5);  //Delay after the zipping state
+    gpsError = preferences.getFloat("gpsError", 3);  //Delay after the zipping state
+    stopPosServo = preferences.getUInt("servoAngle", 133);  //Delay after the zipping state
     motorMaxSpeedStr = String(motorsMaxSpeed);
     afterZipDelayStr = String(afterZipDelay);
     lowThresholdStr = String(lowThreshold);
     highThresholdStr = String(highThreshold);
     uprightErrorStr = String(uprightError);
+    gpsErrorStr = String(gpsError);
+    stopPosServoStr = String(stopPosServo);
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(ssid, password);
     server.begin();
@@ -143,6 +156,26 @@ void serverSetup(){
         uprightError = uprightErrorStr.toFloat();
         logger.log("Upright Error is now: ", true);
         logger.log(uprightErrorStr);
+        }
+        request->send(200, "text/plain", "OK");
+    });
+    server.on("/gpsError", HTTP_GET, [] (AsyncWebServerRequest *request){
+        // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
+        if (request->hasParam("value")) {
+        gpsErrorStr = request->getParam("value")->value();
+        gpsError = gpsErrorStr.toFloat();
+        logger.log("GPS Error is now: ", true);
+        logger.log(gpsErrorStr);
+        }
+        request->send(200, "text/plain", "OK");
+    });
+    server.on("/servoangle", HTTP_GET, [] (AsyncWebServerRequest *request){
+        // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
+        if (request->hasParam("value")) {
+        stopPosServoStr = request->getParam("value")->value();
+        stopPosServo = stopPosServoStr.toInt();
+        logger.log("Servo angle is now: ", true);
+        logger.log(stopPosServoStr);
         }
         request->send(200, "text/plain", "OK");
     });
@@ -201,6 +234,10 @@ void serverSetup(){
     server.on("/resetStable", HTTP_GET, [](AsyncWebServerRequest *request){
         setStable();
         logger.log("Stable reset", true);
+        request->send(SPIFFS, "/odometer.html", String(), false, processor);
+    });
+    server.on("/resetGPS", HTTP_GET, [](AsyncWebServerRequest *request){
+        resetGPShome();
         request->send(SPIFFS, "/odometer.html", String(), false, processor);
     });
     server.on("/testclick", HTTP_GET, [](AsyncWebServerRequest *request){

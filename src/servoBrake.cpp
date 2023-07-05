@@ -14,6 +14,8 @@
 #define REFRESH_USEC 20000 //conversion for microseconds to ticks
 #define DEFAULT_TIMER_WIDTH_TICKS 65536
 
+int stopPosServo = 133;
+
 bool attached = false;
 
 void attachServo(int pin){

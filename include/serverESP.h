@@ -126,7 +126,21 @@ public:
       Serial.println();
     i = logStr.find('-', 0);
     if( i != std::string::npos){
-      Serial.println("crashed here");
+      logStr.insert((i - 1), message);
+    } else {
+      logStr += message;
+    }
+  }
+  void log(double integer, bool ln=false){
+    std::string message = std::to_string(integer);
+    checkLogLength();
+    Serial.print(integer);
+    if(ln)
+      logNewLine();
+    else
+      Serial.println();
+    i = logStr.find('-', 0);
+    if( i != std::string::npos){
       logStr.insert((i - 1), message);
     } else {
       logStr += message;
