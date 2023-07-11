@@ -185,14 +185,14 @@ void loopGPS(){
       // // Number of satellites in use (u32) hello
       // Serial.print("Number of satellites in use = "); 
       // Serial.println(gps.satellites.value());
-      Serial.print(">Distance: ");
-      Serial.println(gps.distanceBetween(homeLat, homeLng, gps.location.lat(), gps.location.lng()));
-
     }
   }
+}
 
-  // Serial.print(">Distance: ");
-  // Serial.println(gps.distanceBetween(homeLat, homeLng, gps.location.lat(), gps.location.lng()))
-
+double getDistanceToEnd(){
+  double distanceBetween = gps.distanceBetween(homeLat, homeLng, gps.location.lat(), gps.location.lng());
+  Serial.print(">Distance: ");
+  Serial.println(distanceBetween);
+  return distanceBetween;
 }
 

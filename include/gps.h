@@ -15,4 +15,6 @@ void setupGPS();
 
 void loopGPS();
 
+double getDistanceToEnd();
+
 #endif

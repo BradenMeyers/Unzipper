@@ -5,6 +5,9 @@
 #include <string>
 // #include <iostream>
 
+#include <Preferences.h>
+extern Preferences preferences;
+
 #define READY 1
 #define ZIPPING 2
 #define RECOVERY 3

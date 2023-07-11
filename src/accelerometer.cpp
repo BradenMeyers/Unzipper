@@ -6,7 +6,7 @@
 #include <testCases.h>
 #include <Preferences.h>
 
-Preferences accelerometerStore;
+//Preferences accelerometerStore;
 
 Adafruit_MPU6050 mpu;
 sensors_event_t a, g, temp;
@@ -132,9 +132,9 @@ void read_acc(bool print=false){
 }
 
 void storeStableValues(){
-    accelerometerStore.putFloat("upX", uprightX);
-    accelerometerStore.putFloat("upY", uprightY);
-    accelerometerStore.putFloat("upZ", uprightZ);
+    preferences.putFloat("upX", uprightX);
+    preferences.putFloat("upY", uprightY);
+    preferences.putFloat("upZ", uprightZ);
 }
 
 void setStable(){
@@ -218,9 +218,10 @@ bool movingStable(){
 
 void setupAccel(){
     initMPU();
-    accelerometerStore.begin("accel-store", false);
-    uprightX = accelerometerStore.getFloat("upX", 0);
-    uprightY = accelerometerStore.getFloat("upY", 0);
-    uprightZ = accelerometerStore.getFloat("upZ", 0);
+    // preferences.begin("accel-store", false);
+    uprightX = preferences.getFloat("upX", 0);
+    Serial.println("here ");
+    uprightY = preferences.getFloat("upY", 0);
+    uprightZ = preferences.getFloat("upZ", 0);
 }
 

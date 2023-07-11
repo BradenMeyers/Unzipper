@@ -20,7 +20,7 @@ Timer handleBarTimer;
 
 byte buzzer = 27;
 byte motorDirection = 12;  //updated on mar 17
-byte motor = 26;  //updated on mar 17
+byte motor = 13;  //july5th updated becasue pin 26 on reset it was pulling high. 
 byte handleBarSensor = 4;  //was 17 but switched cuz Serial on JULY 4th
 
 #define motorChannel 1
@@ -231,9 +231,13 @@ void moveToTop(){
   logger.log("Motor has reached max speed", true);
   while(true){
     //Serial.println(rotations);
+    double distanceToEnd = getDistanceToEnd();
     if(half){
       turnOnMotor(motorsMaxSpeed/2);
       logger.log("half speed activated from remote", true);
+    }
+    else if(distanceToEnd < 15){
+      turnOnMotor(motorsMaxSpeed/2);
     }
     if(escapeRecovery(motorsMaxSpeed)){
       break;
@@ -269,7 +273,7 @@ void setup(){
   ledcAttachPin(motor, motorChannel);
   ledcWrite(motorChannel, 0);
   remoteSetup();
-  //setupAccel();
+  setupAccel();
   servoSetup();
   setupOdometer();
   setupGPS();
