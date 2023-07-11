@@ -5,7 +5,7 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <remote.h>
-#include <servoBrake.h>
+#include <motor.h>
 #include <serverESP.h>
 #include <accelerometer.h>
 #include <timer.h>
@@ -28,7 +28,7 @@ byte handleBarSensor = 4;  //was 17 but switched cuz Serial on JULY 4th
 #define freq 5000
 #define RECOVERY_TO_READY_AFTER_BEEN_GRABBED_TIME 1700
 
-static int motorAccelerationTimeLimit = 25;  //this determines how fast the motor increses its speed by one PWM value
+static int motorAccelerationTimeLimit = 20;  //this determines how fast the motor increses its speed by one PWM value
 const char* someoneOnLog = "Stopping motor because someone was on";
 const char* wifiStopMotorLog = "Stopping motor because wifi";
 const char* stalledLog = "Stopping motor because it is stalled";
@@ -93,7 +93,7 @@ void turnOnMotor(int speed){
     digitalWrite(motorDirection, HIGH);
   else
     digitalWrite(motorDirection, LOW);
-  ledcWrite(motorChannel, speed);
+    writeMicroseconds(speed);
   /* if(batteryVoltage()< 16.50  && speed != 0){ 
     speed = speed + 10;
     mainlog.log("motor speed increase due to low battery voltage", true);
@@ -103,6 +103,25 @@ void turnOnMotor(int speed){
   }
 }
 
+void halfSpeedMotor(){
+  int halfSpeed = int((motorsMaxSpeed-1500)*0.5);
+  halfSpeed +=1500;
+  turnOnMotor(halfSpeed);
+}
+
+void stopTheMotor(){
+  turnOnMotor(OFFPOS);
+  digitalWrite(buzzer, LOW);
+  /* if(!wifiStopMotor){
+    if(atTheTopTimer.getTime() > 2000){countToTopLimitOffset += 2;}
+    else if(atTheTopTimer.getTime() < 1000){countToTopLimitOffset -= 2;}
+  } */
+  wifiStopMotor = false;
+  recoveryTimer.start();
+  while(recoveryTimer.getTime() < RECOVERY_TO_READY_AFTER_BEEN_GRABBED_TIME){}
+  state = READY;
+}
+
 void readyAtTheTop(){
   bool servoPositionLock = false;
   logger.checkLogLength();
@@ -110,8 +129,6 @@ void readyAtTheTop(){
   writeServo(OFFPOS);
   while(!someoneOn(1000)){
     backgroundProcesses();
-    //writeServo(OFFPOS);
-    //writeServo(stopPosServo);      //Uncomment these lines out for the servo to be on during ready mode
     if(/* readyTimeOutTimer.getTime() > 120000 or */ wifiSkipToRecovery){
       state = RECOVERY;
       wifiSkipToRecovery = false;
@@ -119,12 +136,10 @@ void readyAtTheTop(){
       return;
     }
     while(racecarMode){
-      writeServo(OFFPOS); //take break off 
-      turnOnMotor(racecarSpeed);
+      turnOnMotor(racecarSpeed);      //check here
       backgroundProcesses();
     }
-    //writeServo(stopPosServo);  //uncomment this line when you turn servo on in ready mode
-    turnOnMotor(0);
+    turnOnMotor(OFFPOS);
     if(beep == 1)
       digitalWrite(buzzer, HIGH);
     else
@@ -133,8 +148,6 @@ void readyAtTheTop(){
       return;
     }
   }
-  //writeServo(OFFPOS);    //Uncomment these lines out for the servo to be on during ready mode
-  delay(SERVODELAY);
   state = ZIPPING;
 }
 
@@ -152,21 +165,6 @@ void movingDown(){
   }
   stopCount();
   state = RECOVERY;
-  writeServo(stopPosServo);
-  delay(SERVODELAY);
-}
-
-void stopTheMotor(){
-  turnOnMotor(0);
-  digitalWrite(buzzer, LOW);
-  /* if(!wifiStopMotor){
-    if(atTheTopTimer.getTime() > 2000){countToTopLimitOffset += 2;}
-    else if(atTheTopTimer.getTime() < 1000){countToTopLimitOffset -= 2;}
-  } */
-  wifiStopMotor = false;
-  recoveryTimer.start();
-  while(recoveryTimer.getTime() < RECOVERY_TO_READY_AFTER_BEEN_GRABBED_TIME){}
-  state = READY;
 }
 
 bool initialEscapeRecovery(){
@@ -214,11 +212,9 @@ void moveToTop(){
     if(initialEscapeRecovery())
       return;
   }
-  writeServo(OFFPOS); 
-  delay(SERVODELAY*1.5);  
   logger.log("Begin speeding motor up", true);
   digitalWrite(buzzer, LOW);
-  for(int motorSpeed=50; motorSpeed<=motorsMaxSpeed; motorSpeed++){
+  for(int motorSpeed=1500; motorSpeed<=motorsMaxSpeed; motorSpeed++){
     turnOnMotor(motorSpeed);
     recoveryTimer.start();
     while(recoveryTimer.getTime() < motorAccelerationTimeLimit){
@@ -233,11 +229,11 @@ void moveToTop(){
     //Serial.println(rotations);
     double distanceToEnd = getDistanceToEnd();
     if(half){
-      turnOnMotor(motorsMaxSpeed/2);
+      halfSpeedMotor();
       logger.log("half speed activated from remote", true);
     }
     else if(distanceToEnd < 15){
-      turnOnMotor(motorsMaxSpeed/2);
+      halfSpeedMotor();
     }
     if(escapeRecovery(motorsMaxSpeed)){
       break;
@@ -274,7 +270,7 @@ void setup(){
   ledcWrite(motorChannel, 0);
   remoteSetup();
   setupAccel();
-  servoSetup();
+  motorSetup();
   setupOdometer();
   setupGPS();
   // Serial.println("i made it here");

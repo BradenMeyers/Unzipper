@@ -2,7 +2,7 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <timer.h>
-#include <servoBrake.h>
+#include <motor.h>
 #include <testCases.h>
 #include <serverESP.h>
 #include <accelerometer.h>
@@ -68,39 +68,39 @@ void odometerLoop(){
 
 //SERVO TESTS
 
-void servoLoop(){
-    static int pos = 90;
-    if(pos <= 180){
-        writeServo(pos);
-        delay(SERVODELAY/2);
-        testLogger.log("Moving servo forward", true);
-        pos +=30;
-    }
-    else{
-        pos = 0;
-        testLogger.log("Moving servo backward", true);
-        writeServo(pos);
-        delay(SERVODELAY*3);
-    }
-}
+// void servoLoop(){
+//     static int pos = 90;
+//     if(pos <= 180){
+//         writeServo(pos);
+//         delay(SERVODELAY/2);
+//         testLogger.log("Moving servo forward", true);
+//         pos +=30;
+//     }
+//     else{
+//         pos = 0;
+//         testLogger.log("Moving servo backward", true);
+//         writeServo(pos);
+//         delay(SERVODELAY*3);
+//     }
+// }
 
 //MOTOR TESTS
 int motorChannelTest = 1;
 String directionStrTest = "UP";
 byte motorDirectionTest = 12;
-byte motorTest = 26;
+byte motorTest = 13;
 
 void turnOnMotorTest(int speed){
   if(directionStrTest == "DOWN")
     digitalWrite(motorDirectionTest, HIGH);
   else
     digitalWrite(motorDirectionTest, LOW);
-  ledcWrite(motorChannelTest, speed);
+    writeMicroseconds(speed);
   /* if(batteryVoltage()< 16.50  && speed != 0){ 
     speed = speed + 10;
     mainlog.log("motor speed increase due to low battery voltage", true);
   } */
-  if(speed == 0){
+  if(speed == OFFPOS){
     //mainlog.log("MOTOR IS OFF------------------", true);
   }
 }
@@ -109,28 +109,21 @@ void motorLoop(){
     delay(1000);
     directionStrTest = "UP";
     testLogger.log("Spin motor Forward", true);
-    for (int i = 0; i < 200; i++)
+    for (int i = OFFPOS; i < OFFPOS+200; i++)
     {
         turnOnMotorTest(i);
         delay(10);
     }
     delay(1000);
-    directionStrTest = "DOWN";
-    testLogger.log("Spin motor Backward", true);
-    for (int i = 0; i < 200; i++)
-    {
-        turnOnMotorTest(i);
-        delay(10);
-    }
     delay(1000);
+    turnOnMotor(OFFPOS);
 }
 
 typedef enum{
     ACCELEROMETER,
     ODOMETER, 
     LED,
-    MOTOR,
-    SERVO
+    MOTOR
 } sm_test;
 sm_test testState = LED;
 
@@ -145,10 +138,6 @@ void web_select(int testSel){
             testLogger.log("Accelerometer test will check the stability every 0.5 seconds", true);
             testState = ACCELEROMETER;
         }
-        else if(testSel == SERVO){
-            testState = SERVO;
-            testLogger.log("Servo will move back and forth between 0 and 180 degrees",true);
-        }
         else if(testSel == ODOMETER){
             testState = ODOMETER; 
             testLogger.log("odometers will count the rotations",true);
@@ -162,7 +151,7 @@ void testSelect(){
     testLogger.checkLogLength();
     while(state == TEST){
         if(testState != MOTOR){
-            turnOnMotor(0);
+            turnOnMotor(OFFPOS);
         }
         switch (testState)
         {
@@ -171,9 +160,6 @@ void testSelect(){
             break;
         case ACCELEROMETER:
             accelerometerLoop();
-            break;
-        case SERVO:
-            servoLoop();
             break;
         case ODOMETER:
             static bool initodometer = false;

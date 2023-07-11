@@ -8,7 +8,7 @@
 #include <testCases.h>
 #include <odometer.h>
 #include <gps.h>
-#include <servoBrake.h>
+#include <motor.h>
 
 Blogger logger;
 
@@ -35,7 +35,7 @@ byte odometerSensor = 33;
 
 byte state = READY;
 int odometerSensorValue = 0;
-int motorsMaxSpeed = 200;
+int motorsMaxSpeed = 1600;
 float afterZipDelay = 7;
 
 int highThreshold = 3000;
@@ -49,8 +49,6 @@ String motorMaxSpeedStr = String(motorsMaxSpeed);
 String afterZipDelayStr = String(afterZipDelay);  //cause actual variable is in miliseconds but wifi is in seconds
 String uprightErrorStr = String(uprightError);
 String gpsErrorStr = String(gpsError);
-String stopPosServoStr = String(stopPosServo);
-
 bool wifiStopMotor = false;
 bool wifiSkipToRecovery = false;
 
@@ -81,7 +79,6 @@ String processor(const String& var){
   else if(var == "TESTLOG"){return testLogger.logStr.c_str();}
   else if(var == "SATLOCK"){return String(satelliteLock());}
   else if(var == "GPSERROR"){return String(gpsError);}
-  else if(var == "SERVOANGLE"){return String(stopPosServo);}
   return String();
 }
 
@@ -92,7 +89,6 @@ void storeValues(){
     preferences.putFloat("zDelay", afterZipDelay);
     preferences.putFloat("uError", uprightError);
     preferences.putFloat("gpsError", gpsError);
-    preferences.putUInt("servoAngle", stopPosServo);
 }
 
 void initSPIFFS() {
@@ -104,20 +100,18 @@ void initSPIFFS() {
 
 void serverSetup(){
     preferences.begin("my-app", false);
-    motorsMaxSpeed = preferences.getUInt("max", 195);     //max speed
+    motorsMaxSpeed = preferences.getUInt("max", 1600);     //max speed
     highThreshold = preferences.getUInt("upper", 2500); //Upper IR Threshold
     lowThreshold = preferences.getUInt("lower", 1000); //Lower IR threshold
     afterZipDelay = preferences.getFloat("zDelay", 10);  //Delay after the zipping state
     uprightError = preferences.getFloat("uError", 1.5);  //Delay after the zipping state
     gpsError = preferences.getFloat("gpsError", 3);  //Delay after the zipping state
-    stopPosServo = preferences.getUInt("servoAngle", 133);  //Delay after the zipping state
     motorMaxSpeedStr = String(motorsMaxSpeed);
     afterZipDelayStr = String(afterZipDelay);
     lowThresholdStr = String(lowThreshold);
     highThresholdStr = String(highThreshold);
     uprightErrorStr = String(uprightError);
     gpsErrorStr = String(gpsError);
-    stopPosServoStr = String(stopPosServo);
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(ssid, password);
     server.begin();
@@ -169,17 +163,6 @@ void serverSetup(){
         }
         request->send(200, "text/plain", "OK");
     });
-    server.on("/servoangle", HTTP_GET, [] (AsyncWebServerRequest *request){
-        // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
-        if (request->hasParam("value")) {
-        stopPosServoStr = request->getParam("value")->value();
-        stopPosServo = stopPosServoStr.toInt();
-        logger.log("Servo angle is now: ", true);
-        logger.log(stopPosServoStr);
-        }
-        request->send(200, "text/plain", "OK");
-    });
-
     server.on("/stopclick", HTTP_GET, [](AsyncWebServerRequest *request){
         if(state == RECOVERY){wifiStopMotor = true;}
         Serial.println("stop Button clicked");

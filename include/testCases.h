@@ -9,8 +9,6 @@ void accelerometerLoop();
 void odometerSetup();
 void odometerLoop();
 
-void servoLoop();
-
 void motorLoop();
 
 void testSelect();

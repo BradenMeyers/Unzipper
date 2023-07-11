@@ -51,7 +51,7 @@ int stall = 1;
 int half = 0; //0 is not pressed 1 is pressed.
 int beep = 0; // 0 turn off beeper, 1 turn on beeper
 bool racecarMode = false;
-int racecarSpeed = 0;
+int racecarSpeed = 1500;
 
 void updateOutgoing(){
   if(directionStr == "DOWN"){

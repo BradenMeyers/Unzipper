@@ -1,32 +1,30 @@
 
 #include <Arduino.h>
-#include <servoBrake.h>
+#include <motor.h>
 
-#define MINMICRO 500
-#define MAXMICRO 2500
+#define MINMICRO 1000
+#define MAXMICRO 2000
 #define NUETRALMICRO 1500       //PWM specs found on datasheet from part and on Amazon
 
-#define SERVOPIN 19          //GPIO pin 4
-#define SERVOCHANNEL 2
+#define MOTORPIN 13          //GPIO pin 4
+#define MOTORCHANNEL 2
 #define FREQUENCY 50    //AMAZON Specs for servo said frequency could be between 50-330hz
 #define RESOLUTION 16   //found this on esp32 servo library as DEFAULT_TIMER_WIDTH
 
 #define REFRESH_USEC 20000 //conversion for microseconds to ticks
 #define DEFAULT_TIMER_WIDTH_TICKS 65536
 
-int stopPosServo = 133;
-
 bool attached = false;
 
 void attachServo(int pin){
-    ledcSetup(SERVOCHANNEL, FREQUENCY, RESOLUTION); // channel #, 50 Hz, timer width
-    ledcAttachPin(SERVOPIN, SERVOCHANNEL);   // GPIO pin assigned to channel
+    ledcSetup(MOTORCHANNEL, FREQUENCY, RESOLUTION); // channel #, 50 Hz, timer width
+    ledcAttachPin(MOTORPIN, MOTORCHANNEL);   // GPIO pin assigned to channel
     attached = true;
 }
 
 void detachServo()
 {
-    ledcDetachPin(SERVOPIN);
+    ledcDetachPin(MOTORPIN);
     attached = false;
 }
 
@@ -60,7 +58,7 @@ void writeMicroseconds(int value){
 
         value = usToTicks(value);  // convert to ticks
         // do the actual write
-        ledcWrite(SERVOCHANNEL, value);
+        ledcWrite(MOTORCHANNEL, value);
     }
 }
 
@@ -71,10 +69,11 @@ int ticksToUs(int ticks)
     return (int)((float)ticks * ((float)REFRESH_USEC / (float)DEFAULT_TIMER_WIDTH_TICKS)); 
 }
 
-void servoSetup(){
-    writeServo(OFFPOS);
-    attachServo(SERVOPIN);
-    writeServo(OFFPOS);
-    Serial.println("Servo setup");
-    delay(100);
+void motorSetup(){
+    writeMicroseconds(OFFPOS);
+    attachServo(MOTORPIN);
+    writeMicroseconds(OFFPOS);
+    // Serial.println("Servo setup");
+    // delay(100);
 }
+
