@@ -76,7 +76,7 @@ void backgroundProcesses(){
 
 bool someoneOn(int timeLimit){
   backgroundProcesses();
-  static byte handleBarSensorValue = 0;
+  static byte handleBarSensorValue = 1;
   if(digitalRead(handleBarSensor) != handleBarSensorValue){
     if(handleBarTimer.getTime() > timeLimit){
       handleBarSensorValue = !handleBarSensorValue;
@@ -84,8 +84,8 @@ bool someoneOn(int timeLimit){
   }
   else{handleBarTimer.start();}
 
-  if(handleBarSensorValue){return true;}  //adjust handlebar to be opposite with the pullup
-  return false;
+  if(handleBarSensorValue){return false;}  //adjust handlebar to be opposite with the pullup
+  return true;
 }
 
 void turnOnMotor(int speed){
@@ -214,7 +214,7 @@ void moveToTop(){
   }
   logger.log("Begin speeding motor up", true);
   digitalWrite(buzzer, LOW);
-  for(int motorSpeed=1500; motorSpeed<=motorsMaxSpeed; motorSpeed++){
+  for(int motorSpeed=1550; motorSpeed<=motorsMaxSpeed; motorSpeed++){
     turnOnMotor(motorSpeed);
     recoveryTimer.start();
     while(recoveryTimer.getTime() < motorAccelerationTimeLimit){
