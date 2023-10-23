@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include <serverESP.h>
 #include <testCases.h>
+#include <main.h>
 Timer sendData;
 Timer dataRecTimer;
 Timer racecarTimer;
@@ -91,9 +92,10 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
       Serial.println(directionStr);
     }
   }
-  else
+  else{
     racecarMode = false;    //when the remote leaves racecar mode data will be sent that is not 8 bytes
-
+    turnOnBrake();
+  }
   if(len > 25 ){
     memcpy(&incoming, incomingData, sizeof(incoming));
     Serial.print("Direction: ");

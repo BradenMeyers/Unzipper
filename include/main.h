@@ -5,4 +5,7 @@
 
 void turnOnMotor(int speed);
 
+void turnOnBrake();
+void takeOffBrake();
+
 #endif

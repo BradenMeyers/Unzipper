@@ -6,7 +6,6 @@
 #define MAXMICRO 2000
 #define NUETRALMICRO 1500       //PWM specs found on datasheet from part and on Amazon
 
-#define MOTORPIN 13          //GPIO pin 4
 #define MOTORCHANNEL 2
 #define FREQUENCY 50    //AMAZON Specs for servo said frequency could be between 50-330hz
 #define RESOLUTION 16   //found this on esp32 servo library as DEFAULT_TIMER_WIDTH
@@ -15,10 +14,11 @@
 #define DEFAULT_TIMER_WIDTH_TICKS 65536
 
 bool attached = false;
+int MOTORPIN = ;          //GPIO pin 4
 
 void attachServo(int pin){
     ledcSetup(MOTORCHANNEL, FREQUENCY, RESOLUTION); // channel #, 50 Hz, timer width
-    ledcAttachPin(MOTORPIN, MOTORCHANNEL);   // GPIO pin assigned to channel
+    ledcAttachPin(pin, MOTORCHANNEL);   // GPIO pin assigned to channel
     attached = true;
 }
 
@@ -69,11 +69,13 @@ int ticksToUs(int ticks)
     return (int)((float)ticks * ((float)REFRESH_USEC / (float)DEFAULT_TIMER_WIDTH_TICKS)); 
 }
 
-void motorSetup(){
+void motorSetup(int pin){
     writeMicroseconds(OFFPOS);
-    attachServo(MOTORPIN);
+    attachServo(pin);
     writeMicroseconds(OFFPOS);
     // Serial.println("Servo setup");
     // delay(100);
 }
+
+
 

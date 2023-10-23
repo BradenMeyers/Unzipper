@@ -17,6 +17,7 @@ Timer recoveryTimer;
 Timer atTheTopTimer;
 Timer readyTimeOutTimer;
 Timer handleBarTimer;
+Timer stallTimer;
 
 byte buzzer = 27;
 byte motorDirection = 12;  //updated on mar 17
@@ -27,6 +28,7 @@ byte handleBarSensor = 4;  //was 17 but switched cuz Serial on JULY 4th
 #define resolution 8
 #define freq 5000
 #define RECOVERY_TO_READY_AFTER_BEEN_GRABBED_TIME 1700
+#define brakePos 1200
 
 static int motorAccelerationTimeLimit = 20;  //this determines how fast the motor increses its speed by one PWM value
 const char* someoneOnLog = "Stopping motor because someone was on";
@@ -122,11 +124,18 @@ void stopTheMotor(){
   state = READY;
 }
 
+void turnOnBrake(){
+  turnOnMotor(brakePos);
+}
+
+void takeOffBrake(){
+  turnOnMotor(OFFPOS);
+}
+
 void readyAtTheTop(){
-  bool servoPositionLock = false;
   logger.checkLogLength();
   readyTimeOutTimer.start();
-  writeServo(OFFPOS);
+  turnOnBrake();
   while(!someoneOn(1000)){
     backgroundProcesses();
     if(/* readyTimeOutTimer.getTime() > 120000 or */ wifiSkipToRecovery){
@@ -139,7 +148,6 @@ void readyAtTheTop(){
       turnOnMotor(racecarSpeed);      //check here
       backgroundProcesses();
     }
-    turnOnMotor(OFFPOS);
     if(beep == 1)
       digitalWrite(buzzer, HIGH);
     else
@@ -149,6 +157,7 @@ void readyAtTheTop(){
     }
   }
   state = ZIPPING;
+  takeOffBrake();
 }
 
 void movingDown(){
@@ -164,6 +173,7 @@ void movingDown(){
     }
   }
   stopCount();
+  turnOnBrake();
   state = RECOVERY;
 }
 
@@ -185,22 +195,22 @@ bool initialEscapeRecovery(){
 
 bool escapeRecovery(int motorSpeedparam){
   loopOdometer();  //does this need to be somewhere else? 
-  if(someoneOn(50)){
-      logger.log(someoneOnLog, true);
-      return true;
-    }
+  // if(someoneOn(50)){
+  //     logger.log(someoneOnLog, true);
+  //     return true;
+  //   }
     if(wifiStopMotor){
       logger.log(wifiStopMotorLog, true);
       return true;
     }
-    if((motorSpeedparam > (motorsMaxSpeed - 30)) and isStalled()){
+    if((stallTimer.getTime() > 1000)  and isStalled()){
       logger.log(stalledLog, true);
       return true;
     }
-    if(!movingStable()){
-      logger.log("System is unstable while moving", true);
-      return true;
-    }
+    // if(!movingStable()){
+    //   logger.log("System is unstable while moving", true);
+    //   return true;
+    // }
   return false;
 }
 
@@ -208,13 +218,15 @@ void moveToTop(){
   digitalWrite(buzzer, HIGH);
   //atTheTop = false;
   recoveryTimer.start();
-  while(!checkStable(afterZipDelay*1000)){  //!checkStable(afterZipDelay*1000)  //recoveryTimer.getTime() < afterZipDelay*1000
-    if(initialEscapeRecovery())
-      return;
-  }
+  // while(!checkStable(afterZipDelay*1000)){  //!checkStable(afterZipDelay*1000)  //recoveryTimer.getTime() < afterZipDelay*1000
+  //   if(initialEscapeRecovery())
+  //     return;
+  // }
+  delay(afterZipDelay*1000);
   logger.log("Begin speeding motor up", true);
   digitalWrite(buzzer, LOW);
-  for(int motorSpeed=1550; motorSpeed<=motorsMaxSpeed; motorSpeed++){
+  stallTimer.start();
+  for(int motorSpeed=1600; motorSpeed<=motorsMaxSpeed; motorSpeed++){
     turnOnMotor(motorSpeed);
     recoveryTimer.start();
     while(recoveryTimer.getTime() < motorAccelerationTimeLimit){
@@ -224,6 +236,8 @@ void moveToTop(){
       }
     }
   }
+  turnOnMotor(motorsMaxSpeed);
+  recoveryTimer.start();
   logger.log("Motor has reached max speed", true);
   while(true){
     //Serial.println(rotations);
@@ -234,6 +248,7 @@ void moveToTop(){
     }
     else if(distanceToEnd < 15){
       halfSpeedMotor();
+      logger.log("GPS Triggered");
     }
     if(escapeRecovery(motorsMaxSpeed)){
       break;
@@ -263,11 +278,11 @@ void setup(){
   pinMode(handleBarSensor, INPUT_PULLUP);
   pinMode(buzzer, OUTPUT);
   pinMode(motorDirection, OUTPUT);
-  pinMode(motor, OUTPUT);
-  digitalWrite(motor, LOW);
-  ledcSetup(motorChannel, freq, resolution);
-  ledcAttachPin(motor, motorChannel);
-  ledcWrite(motorChannel, 0);
+  // pinMode(motor, OUTPUT);
+  // digitalWrite(motor, LOW);
+  // ledcSetup(motorChannel, freq, resolution);
+  // ledcAttachPin(motor, motorChannel);
+  // ledcWrite(motorChannel, OFFPOS);
   remoteSetup();
   setupAccel();
   motorSetup();
@@ -275,7 +290,6 @@ void setup(){
   setupGPS();
   // Serial.println("i made it here");
 }
-
 
 void loop(){
   updateVariableStrings();

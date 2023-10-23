@@ -6,7 +6,7 @@
 
 
 #define DELAYODOMETER 5
-#define ODOMETERSTALLRATE 160
+#define ODOMETERSTALLRATE 500
 byte odometerHallEffect = 33;
 byte odometerHallBackup = 14;
 bool overideMain = false;
@@ -156,7 +156,7 @@ unsigned long stopCount(){
     bool backupStall = (backupHE.isStalledIndiv() and !overideBackup);
     if(backupStall)
         logger.log("triggered stall on backup", true);
-    return (mainStall or backupStall);
+    return (mainStall and backupStall);
  }
 
 void setupOdometer(){

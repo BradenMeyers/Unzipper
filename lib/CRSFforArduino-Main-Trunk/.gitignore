@@ -1,0 +1,19 @@
+# Artefacts for compiling the code
+.pio/
+
+# Artefacts for Visual Studio Code
+.vscode/
+
+# PlatformIO specific README files
+src/include/README
+src/lib/README
+src/test/README
+
+# Template files for CRSF for Arduino
+templates/
+
+# Arduino IDE artefacts
+.development
+
+# Developer's notes
+notes/
