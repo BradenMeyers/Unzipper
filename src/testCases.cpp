@@ -85,33 +85,14 @@ void odometerLoop(){
 // }
 
 //MOTOR TESTS
-int motorChannelTest = 1;
-String directionStrTest = "UP";
-byte motorDirectionTest = 12;
-byte motorTest = 13;
 
-void turnOnMotorTest(int speed){
-  if(directionStrTest == "DOWN")
-    digitalWrite(motorDirectionTest, HIGH);
-  else
-    digitalWrite(motorDirectionTest, LOW);
-    writeMicroseconds(speed);
-  /* if(batteryVoltage()< 16.50  && speed != 0){ 
-    speed = speed + 10;
-    mainlog.log("motor speed increase due to low battery voltage", true);
-  } */
-  if(speed == OFFPOS){
-    //mainlog.log("MOTOR IS OFF------------------", true);
-  }
-}
 
 void motorLoop(){
     delay(1000);
-    directionStrTest = "UP";
     testLogger.log("Spin motor Forward", true);
-    for (int i = OFFPOS; i < OFFPOS+200; i++)
+    for (int i = MOTORINITSPEED; i < OFFPOS+200; i++)
     {
-        turnOnMotorTest(i);
+        turnOnMotor(i);
         delay(10);
     }
     delay(1000);

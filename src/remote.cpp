@@ -26,7 +26,7 @@ test_struct incoming;
 typedef struct send_message {
   int dir;    //1 down  and 0 Up 
   int max;
-  int zipDelay;
+  float zipDelay;
 } send_message;
 send_message outgoing;
 
@@ -52,7 +52,7 @@ int stall = 1;
 int half = 0; //0 is not pressed 1 is pressed.
 int beep = 0; // 0 turn off beeper, 1 turn on beeper
 bool racecarMode = false;
-int racecarSpeed = 1500;
+int racecarSpeed = 0;  //CHECK: Remote works with Brushed motor
 
 void updateOutgoing(){
   if(directionStr == "DOWN"){
@@ -67,69 +67,68 @@ void updateOutgoing(){
 
 //callback function that will be executed when data is received
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  dataRecTimer.start();
-  Serial.print("Bytes received: ");
-  Serial.println(len);
-  if(len < 6){
-    memcpy(&connect_request, incomingData, sizeof(connect_request));
-    sentFirstMessage = false;
-    sendRequest = true;
-    failedAttempts = 0;
-  }
-  if(len > 6 && len < 20){
-    Serial.println("i am here 1");
-    memcpy(&racecarData, incomingData, sizeof(racecarData));
-    racecarMode = true;
-    racecarTimer.start();
-    if(state == READY){
-      Serial.println("I am here");
-      racecarSpeed = racecarData.speed;
-      Serial.println(racecarSpeed);
-      if(racecarData.dir == 1)
-        directionStr = "DOWN";
-      else
-        directionStr = "UP";
-      Serial.println(directionStr);
-    }
-  }
-  else{
-    racecarMode = false;    //when the remote leaves racecar mode data will be sent that is not 8 bytes
-    turnOnBrake();
-  }
-  if(len > 25 ){
-    memcpy(&incoming, incomingData, sizeof(incoming));
-    Serial.print("Direction: ");
-    Serial.println(incoming.dir);
-    Serial.print("Delay: ");
-    Serial.println(incoming.zipDelay);
-    Serial.print("Max Speed: ");
-    Serial.println(incoming.max);
-    Serial.print("Stall: ");
-    Serial.println(incoming.stall);
-    Serial.print("Stop: ");
-    Serial.println(incoming.stop);
-    Serial.print("go: ");
-    Serial.println(incoming.go);
-    Serial.print("Half: ");
-    Serial.println(incoming.half);
-    Serial.print("Beep: ");
-    Serial.println(incoming.beep);
-    Serial.println();
-    motorsMaxSpeed = incoming.max;
-    motorMaxSpeedStr = String(motorsMaxSpeed);
-    afterZipDelay = incoming.zipDelay;
-    afterZipDelayStr = String(afterZipDelay);
-    wifiStopMotor = incoming.stop;
-    wifiSkipToRecovery = incoming.go;
-    half = incoming.half;
-    beep = incoming.beep;
-    stall = incoming.stall;
-    if(incoming.dir == 1)
-      directionStr = "DOWN";
-    else
-      directionStr = "UP";
-    updateOutgoing();
-  }
+  // dataRecTimer.start();
+  // Serial.print("Bytes received: ");
+  // Serial.println(len);
+  // if(len < 6){
+  //   memcpy(&connect_request, incomingData, sizeof(connect_request));
+  //   sentFirstMessage = false;
+  //   sendRequest = true;
+  //   failedAttempts = 0;
+  // }
+  // if(len > 6 && len < 20){
+  //   Serial.println("i am here 1");
+  //   memcpy(&racecarData, incomingData, sizeof(racecarData));
+  //   racecarMode = true;
+  //   racecarTimer.start();
+  //   if(state == READY){
+  //     Serial.println("I am here");
+  //     racecarSpeed = racecarData.speed;
+  //     Serial.println(racecarSpeed);
+  //     if(racecarData.dir == 1)
+  //       directionStr = "DOWN";
+  //     else
+  //       directionStr = "UP";
+  //     Serial.println(directionStr);
+  //   }
+  // }
+  // else{
+  //   racecarMode = false;    //when the remote leaves racecar mode data will be sent that is not 8 bytes
+  // }
+  // if(len > 25 ){
+  //   memcpy(&incoming, incomingData, sizeof(incoming));
+  //   Serial.print("Direction: ");
+  //   Serial.println(incoming.dir);
+  //   Serial.print("Delay: ");
+  //   Serial.println(incoming.zipDelay);
+  //   Serial.print("Max Speed: ");
+  //   Serial.println(incoming.max);
+  //   Serial.print("Stall: ");
+  //   Serial.println(incoming.stall);
+  //   Serial.print("Stop: ");
+  //   Serial.println(incoming.stop);
+  //   Serial.print("go: ");
+  //   Serial.println(incoming.go);
+  //   Serial.print("Half: ");
+  //   Serial.println(incoming.half);
+  //   Serial.print("Beep: ");
+  //   Serial.println(incoming.beep);
+  //   Serial.println();
+  //   motorsMaxSpeed = incoming.max;
+  //   motorMaxSpeedStr = String(motorsMaxSpeed);
+  //   afterZipDelay = incoming.zipDelay;
+  //   afterZipDelayStr = String(afterZipDelay);
+  //   wifiStopMotor = incoming.stop;
+  //   wifiSkipToRecovery = incoming.go;
+  //   half = incoming.half;
+  //   beep = incoming.beep;
+  //   stall = incoming.stall;
+  //   if(incoming.dir == 1)
+  //     directionStr = "DOWN";
+  //   else
+  //     directionStr = "UP";
+  //   updateOutgoing();
+  // }
 }
 
 
@@ -166,6 +165,7 @@ void compareMessages(){
     sentFirstMessage = false;
     sendRequest = true;    
     failedAttempts = 0;
+    outgoing.zipDelay = afterZipDelay;
   }                     // not sure if the outgoing change could happen in between check and the update. 
   updateOutgoing();  //Needs to update the outgoing packet so it wont trigger again.
 }

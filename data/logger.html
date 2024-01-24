@@ -15,12 +15,11 @@
   <h2>Log</h2>
   <p><button id="clear_button" class="button clear_button" onclick="buttonClickSend(this);">Clear Log</button></p>
   <p><button id="back_button" class="button back_button" onclick="location.href = '/back';">Back</button></p>
-  %LOGSTRING%
+  <p>%LOGSTRING%</p>
 
   <script>
     function buttonClickSend(element){
       var xhr = new XMLHttpRequest();
-      // if(element.id == "back_button"){xhr.open("GET", "/back");}
       if(element.id == "clear_button"){xhr.open("GET", "/clearlog")}
       xhr.send();
     }

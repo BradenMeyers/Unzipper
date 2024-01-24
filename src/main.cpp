@@ -20,15 +20,9 @@ Timer handleBarTimer;
 Timer stallTimer;
 
 byte buzzer = 27;
-byte motorDirection = 12;  //updated on mar 17
-byte motor = 13;  //july5th updated becasue pin 26 on reset it was pulling high. 
-byte handleBarSensor = 4;  //was 17 but switched cuz Serial on JULY 4th
+byte handleBarSensor = 33;  //TODO: New hall effect swtich i think i did that
 
-#define motorChannel 1
-#define resolution 8
-#define freq 5000
 #define RECOVERY_TO_READY_AFTER_BEEN_GRABBED_TIME 1700
-#define brakePos 1200
 
 static int motorAccelerationTimeLimit = 20;  //this determines how fast the motor increses its speed by one PWM value
 const char* someoneOnLog = "Stopping motor because someone was on";
@@ -71,7 +65,7 @@ void ledStateMachine(){
 
 void backgroundProcesses(){
   serverLoop();
-  remoteLoop();
+  //remoteLoop();
   loopGPS();
   // Serial.println("processing");
 }
@@ -90,115 +84,79 @@ bool someoneOn(int timeLimit){
   return true;
 }
 
-void turnOnMotor(int speed){
-  if(directionStr == "DOWN")
-    digitalWrite(motorDirection, HIGH);
-  else
-    digitalWrite(motorDirection, LOW);
-    writeMicroseconds(speed);
-  /* if(batteryVoltage()< 16.50  && speed != 0){ 
-    speed = speed + 10;
-    mainlog.log("motor speed increase due to low battery voltage", true);
-  } */
-  if(speed == 0){
-    //mainlog.log("MOTOR IS OFF------------------", true);
-  }
+void beeper_check(){
+  if(beep == 1)
+      digitalWrite(buzzer, HIGH);
+    else
+      digitalWrite(buzzer, LOW);
 }
 
-void halfSpeedMotor(){
-  int halfSpeed = int((motorsMaxSpeed-1500)*0.5);
-  halfSpeed +=1500;
-  turnOnMotor(halfSpeed);
-}
-
-void stopTheMotor(){
+void stopTheMotor(){      //TODO: Look at this function and move it to motor.cpp change
   turnOnMotor(OFFPOS);
   digitalWrite(buzzer, LOW);
-  /* if(!wifiStopMotor){
-    if(atTheTopTimer.getTime() > 2000){countToTopLimitOffset += 2;}
-    else if(atTheTopTimer.getTime() < 1000){countToTopLimitOffset -= 2;}
-  } */
   wifiStopMotor = false;
   recoveryTimer.start();
   while(recoveryTimer.getTime() < RECOVERY_TO_READY_AFTER_BEEN_GRABBED_TIME){}
   state = READY;
 }
 
-void turnOnBrake(){
-  turnOnMotor(brakePos);
-}
-
-void takeOffBrake(){
-  turnOnMotor(OFFPOS);
-}
-
 void readyAtTheTop(){
   logger.checkLogLength();
   readyTimeOutTimer.start();
-  turnOnBrake();
   while(!someoneOn(1000)){
     backgroundProcesses();
-    if(/* readyTimeOutTimer.getTime() > 120000 or */ wifiSkipToRecovery){
+    if(wifiSkipToRecovery){
       state = RECOVERY;
       wifiSkipToRecovery = false;
       logger.log("Wireless command to Recovery", true);
       return;
     }
     while(racecarMode){
-      turnOnMotor(racecarSpeed);      //check here
+      turnOnMotor(racecarSpeed);      //TODO: Move this into remote file 
       backgroundProcesses();
     }
-    if(beep == 1)
-      digitalWrite(buzzer, HIGH);
-    else
-      digitalWrite(buzzer, LOW);
+    beeper_check();
     if(state == TEST){
       return;
     }
   }
   state = ZIPPING;
-  takeOffBrake();
 }
 
 void movingDown(){
   startCount();
   while(someoneOn(1000)){
     loopOdometer();
-    if(beep == 1)
-      digitalWrite(buzzer, HIGH);
-    else
-      digitalWrite(buzzer, LOW);
+    beeper_check();
     if(state == TEST){
       return;
     }
   }
   stopCount();
-  turnOnBrake();
   state = RECOVERY;
 }
 
-bool initialEscapeRecovery(){
+bool initialEscapeRecovery(){     //Escape recovery before motor turns on
   if(wifiStopMotor){
       wifiStopMotor = false;
       stopTheMotor();
       logger.log(wifiStopMotorLog, true);
       return true;
     }
-  else if(someoneOn(500)){
+  if(someoneOn(200)){
       stopTheMotor();
       logger.log(someoneOnLog, true);
       return true;
   }
-  else
-    return false;
+  return false;
 }
 
-bool escapeRecovery(int motorSpeedparam){
+bool escapeRecovery(){   //Escape recovery when motor has turned on
   loopOdometer();  //does this need to be somewhere else? 
-  // if(someoneOn(50)){
-  //     logger.log(someoneOnLog, true);
-  //     return true;
-  //   }
+    if(someoneOn(50)){
+      logger.log(someoneOnLog, true);
+      return true;
+    }
     if(wifiStopMotor){
       logger.log(wifiStopMotorLog, true);
       return true;
@@ -207,37 +165,41 @@ bool escapeRecovery(int motorSpeedparam){
       logger.log(stalledLog, true);
       return true;
     }
-    // if(!movingStable()){
-    //   logger.log("System is unstable while moving", true);
-    //   return true;
-    // }
+    if(!movingStable()){
+      logger.log("System is unstable while moving", true);
+      return true;
+    }
   return false;
 }
 
-void moveToTop(){
-  digitalWrite(buzzer, HIGH);
-  //atTheTop = false;
+void moveToTop(){     //TODO: THis is where the work needs to be done order and saftey
+  digitalWrite(buzzer, HIGH);     //
+  // atTheTop = false;
   recoveryTimer.start();
-  // while(!checkStable(afterZipDelay*1000)){  //!checkStable(afterZipDelay*1000)  //recoveryTimer.getTime() < afterZipDelay*1000
-  //   if(initialEscapeRecovery())
-  //     return;
-  // }
-  delay(afterZipDelay*1000);
+  while(!checkStable(1000)){ 
+    if(recoveryTimer.getTime() > 10000) 
+      break;
+    backgroundProcesses();
+  }
+  recoveryTimer.start();
+  while(recoveryTimer.getTime() < (afterZipDelay*1000)){  
+    if(initialEscapeRecovery())
+      return;
+  }
   logger.log("Begin speeding motor up", true);
-  digitalWrite(buzzer, LOW);
+  digitalWrite(buzzer, LOW);  //TODO: Have the beeper pulse when motor is on
   stallTimer.start();
-  for(int motorSpeed=1600; motorSpeed<=motorsMaxSpeed; motorSpeed++){
+  for(int motorSpeed=MOTORINITSPEED; motorSpeed<=motorsMaxSpeed; motorSpeed++){  //TODO: Move this to Motor.cpp
     turnOnMotor(motorSpeed);
     recoveryTimer.start();
     while(recoveryTimer.getTime() < motorAccelerationTimeLimit){
-      if(escapeRecovery(motorSpeed)){
+      if(escapeRecovery()){
         stopTheMotor();
         return;
       }
     }
   }
   turnOnMotor(motorsMaxSpeed);
-  recoveryTimer.start();
   logger.log("Motor has reached max speed", true);
   while(true){
     //Serial.println(rotations);
@@ -247,18 +209,12 @@ void moveToTop(){
       logger.log("half speed activated from remote", true);
     }
     else if(distanceToEnd < 15){
-      halfSpeedMotor();
+      //halfSpeedMotor();   //CHange back  for GPS half
       logger.log("GPS Triggered");
     }
-    if(escapeRecovery(motorsMaxSpeed)){
+    if(escapeRecovery()){
       break;
-    }
-    // if(isAtTheTop() and not atTheTop){
-    //   turnOnMotor(motorsMaxSpeed - 70);
-    //   logger.log("Turning motor down because were at the top", true);
-    //   atTheTop = true;
-    //   atTheTopTimer.start();
-    // }
+    }  
   }
   stopTheMotor();
 }
@@ -272,18 +228,12 @@ void updateVariableStrings(){
 }
 
 void setup(){
-  serverSetup();
   Serial.begin(112500);
+  serverSetup();
   analogReadResolution(12);
   pinMode(handleBarSensor, INPUT_PULLUP);
   pinMode(buzzer, OUTPUT);
-  pinMode(motorDirection, OUTPUT);
-  // pinMode(motor, OUTPUT);
-  // digitalWrite(motor, LOW);
-  // ledcSetup(motorChannel, freq, resolution);
-  // ledcAttachPin(motor, motorChannel);
-  // ledcWrite(motorChannel, OFFPOS);
-  remoteSetup();
+  //remoteSetup();   //TODO: Eventually fix the remote
   setupAccel();
   motorSetup();
   setupOdometer();

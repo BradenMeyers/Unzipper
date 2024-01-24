@@ -7,37 +7,6 @@
 
 #define DELAYODOMETER 5
 #define ODOMETERSTALLRATE 500
-byte odometerHallEffect = 33;
-byte odometerHallBackup = 14;
-bool overideMain = false;
-bool overideBackup = false;
-
-// unsigned long countToTopLimit;
-// unsigned long countToTopLimitOffset = 20;
-
-//bool atTheTop = false;
-//bool someonOnStateChanged = false;
-bool shouldCheckAtTheTop = true;
-
-// bool isAtTheTop(){
-//   if(shouldCheckAtTheTop){
-//     if(rotations > countToTopLimit){return true;}
-//   }
-//   return false;
-// }
-
-// void countRotationsHallEffect(int pin){
-//   int magneticValue = digitalRead(pin);
-//   static int lastValue = digitalRead(pin);
-//   if(odometerTimer.getTime() > DELAYODOMETER){
-//     if(magneticValue != lastValue){
-//       rotations++;
-//       lastValue = magneticValue;
-//       odometerTimer.start();
-//       // Serial.println(rotations);
-//     }
-//   }
-// }
 
 class HESensor
 {
@@ -110,9 +79,28 @@ public:
     }
 
     void setupHE(){
-        pinMode(pin, INPUT);
+        pinMode(pin, INPUT_PULLUP);         //CHECK this
     }
 };
+
+
+#ifdef BACKUP_ENABLE
+bool overideBackup = false;
+#endif
+#ifndef BACKUP_ENABLE
+bool overideBackup = true;
+#endif
+
+byte odometerHallEffect = 14; 
+byte odometerHallBackup = 33;
+bool overideMain = false;
+
+// unsigned long countToTopLimit;
+// unsigned long countToTopLimitOffset = 20;
+
+//bool atTheTop = false;
+//bool someonOnStateChanged = false;
+bool shouldCheckAtTheTop = true;
 
 HESensor mainHE(odometerHallEffect);
 HESensor backupHE(odometerHallBackup);
@@ -121,7 +109,7 @@ unsigned long startCount(){
     return mainHE.startIndivCount() + backupHE.startIndivCount();
 }
 
-unsigned long stopCount(){
+unsigned long stopCount(){          //look here and take out backup if we wont be using.
     unsigned long mainCount = mainHE.stopIndivCount();
     unsigned long backupCount = backupHE.stopIndivCount();
     if((mainCount == 0) and (backupCount == 0)){
@@ -156,17 +144,17 @@ unsigned long stopCount(){
     bool backupStall = (backupHE.isStalledIndiv() and !overideBackup);
     if(backupStall)
         logger.log("triggered stall on backup", true);
-    return (mainStall and backupStall);
+    return (mainStall or backupStall);              //CHECK HERE if odometer is not working. It might need an and
  }
 
 void setupOdometer(){
     mainHE.setupHE();
-    backupHE.setupHE();
+    //backupHE.setupHE();
 }
 
 void loopOdometer(){
     mainHE.countRotationsHallEffect();
-    backupHE.countRotationsHallEffect();
+    //backupHE.countRotationsHallEffect();
     //Serial.println("i am here");
 }
 

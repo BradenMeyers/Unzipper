@@ -1,0 +1,84 @@
+<!DOCTYPE HTML><html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zip Line Controls</title>
+  <style>
+    html {font-family: Arial; display: inline-block; text-align: center;}
+    h2 {font-size: 1.4rem;}
+    p {font-size: 1rem;}
+    body {max-width: 400px; margin:0px auto; padding-bottom: 25px;}
+    .slider { -webkit-appearance: none; margin: 14px; width: 360px; height: 25px; background: #203ac9;
+      outline: none; -webkit-transition: .2s; transition: opacity .2s; border-radius: 8px;}
+    .slider::-webkit-slider-thumb {-webkit-appearance: none; appearance: none; width: 35px; height: 35px; background: #5dfc4e; cursor: pointer; border-radius: 8px;}
+    .slider::-moz-range-thumb { width: 35px; height: 35px; background: #003249; cursor: pointer; border-radius: 8px;}
+    .stop_button{background-color: #ff0001; border: none; color: black; padding: 16px 40px; border-radius: 8px;}
+    .direction_button{background-color: #00ff00; border: none; color: black; padding: 16px 40px; border-radius: 8px;}
+    .go_up_button{background-color: #0000ff; border: none; color: yellow; padding: 16px 40px; border-radius: 8px;}
+    .odometer_settings_button{background-color: #c93877; border: none; color: white; padding: 16px 40px; border-radius: 8px;}
+    .log_button{background-color: #c96f10; border: none; color: white; padding: 16px 40px; border-radius: 8px;}
+    .text-color {font-size: 1rem;}
+    /* .state-color {font-size: 1rem;} */
+  </style>
+  <script>
+    // Define the text color based on the integer value
+    var floatValue = parseFloat(%VOLTAGE%);
+    // Define the background colors based on the integer value
+    if (floatValue < 17) {
+        textColor = 'red';
+    } else if (floatValue < 19) {
+        textColor = 'orange';
+    } else {
+        textColor = 'green';
+    }
+     // Define the background colors based on the string value
+    // if (%STATE% == 'READY') {
+    //     stateColor = 'green';
+    // } else if (%STATE% == 'ZIPPING') {
+    //     stateColor = 'blue';
+    // } else {
+    //     stateColor = 'red';
+    // }
+    // Create a new style element and add it to the head
+    var style = document.createElement('style');
+    style.type = 'text/css';
+    style.innerHTML = '.text-color { background-color: ' + textColor + '; }';
+    // style.innerHTML = '.state-color { background-color: ' + stateColor + '; }';
+    document.head.appendChild(style);
+  </script>
+</head>
+<body>
+  <h2>Zip Line Controls</h2>
+  <p>State: %STATE%   Direction: %DIRECTION%</p>
+  <!-- <bat>Battery Voltage: %VOLTAGE%</bat> -->
+  <p class="text-color">Battery Voltage: %VOLTAGE%</p>
+  <p>Temperature: %TEMPERATURE%</p>
+  <!-- <p class="text-color">This line of text will change color based on the integer value.</p> -->
+  <p><button id="stop_button" class="button stop_button" onclick="buttonClickSend(this)">Stop Motor</button></p>
+  <p><button id="direction_button" class="button direction_button" onclick="buttonClickSend(this)">Direction</button></p>
+  <p><button id="go_up_button" class="button go_up_button" onclick="buttonClickSend(this)">Go Up</button></p>
+  <p><span>Max Speed: %MAXSPEEDVALUE%</span></p>
+  <p><input type="range" onchange="sliderSend(this)" id="maxSpeedSlider" min="0" max="100" value="%MAXSPEEDVALUE%" step="10" class="slider"></p>
+  <p><span>After Zip Delay (in seconds): %AFTERZIPDELAY%</span></p>
+  <p><input type="range" onchange="sliderSend(this)" id="afterZipDelaySlider" min="0.0" max="20.0" value="%AFTERZIPDELAY%" step="0.5" class="slider"></p>
+  <p><button id="odometer_settings_button" class="button odometer_settings_button" onclick="location.href = '/odometersettingsclick';">Odometer Settings</button></p>
+  <p><button id="test_page" class="button go_up_button" onclick="location.href = '/testclick';">Test Cases</button></p>
+  <p><button id="log_button" class="button log_button" onclick="location.href = '/logclick';">Log Page</button></p>
+  <!-- <p><button id="server_button" class="button server_button" onclick="location.href = '/serverclick';">Log Page</button></p> -->
+<script>
+function sliderSend(element){
+  var sliderValue = element.value;
+  var xhr = new XMLHttpRequest();
+  if(element.id == "maxSpeedSlider"){xhr.open("GET", "/maxspeed?value="+sliderValue);}
+  else if(element.id == "afterZipDelaySlider"){xhr.open("GET", "/afterzipdelay?value="+sliderValue);}
+  xhr.send();
+}
+function buttonClickSend(element){
+  var xhr = new XMLHttpRequest();
+  if(element.id == "stop_button"){xhr.open("GET", "/stopclick");}
+  else if(element.id == "direction_button"){xhr.open("GET", "/directionclick");}
+  else if(element.id == "go_up_button"){xhr.open("GET", "/goupclick");}
+  xhr.send();
+}
+</script>
+</body>
+</html>

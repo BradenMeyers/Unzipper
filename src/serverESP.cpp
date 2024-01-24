@@ -1,8 +1,9 @@
 #include <Arduino.h>
+#include <serverESP.h>
 #include <WiFi.h>
+#include <ElegantOTA.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
-#include <serverESP.h>
 #include <SPIFFS.h>
 #include <accelerometer.h>
 #include <testCases.h>
@@ -35,7 +36,7 @@ byte odometerSensor = 33;
 
 byte state = READY;
 int odometerSensorValue = 0;
-int motorsMaxSpeed = 1600;
+int motorsMaxSpeed = 200;
 float afterZipDelay = 7;
 
 int highThreshold = 3000;
@@ -45,7 +46,7 @@ String lowThresholdStr = String(lowThreshold);
 
 String stateStr = "Ready";
 String directionStr = "UP";
-String motorMaxSpeedStr = String(motorsMaxSpeed);
+String motorMaxSpeedStr = String(map(motorsMaxSpeed, MOTORINITSPEED, 255, 0, 100));
 String afterZipDelayStr = String(afterZipDelay);  //cause actual variable is in miliseconds but wifi is in seconds
 String uprightErrorStr = String(uprightError);
 String gpsErrorStr = String(gpsError);
@@ -66,7 +67,7 @@ float batteryVoltage(){
 // Replaces placeholder with button section in your web page
 String processor(const String& var){
   //logln(var);
-  if (var == "MAXSPEEDVALUE"){return String(motorsMaxSpeed);}
+  if (var == "MAXSPEEDVALUE"){return String(map(motorsMaxSpeed, MOTORINITSPEED, 255, 0, 100));}
   else if(var == "STATE"){return stateStr;}
   else if(var == "DIRECTION"){return directionStr;}
   else if(var == "AFTERZIPDELAY"){return afterZipDelayStr;}
@@ -100,21 +101,26 @@ void initSPIFFS() {
 
 void serverSetup(){
     preferences.begin("my-app", false);
-    motorsMaxSpeed = preferences.getUInt("max", 1600);     //max speed
+    motorsMaxSpeed = preferences.getUInt("max", 200);     //max speed
     highThreshold = preferences.getUInt("upper", 2500); //Upper IR Threshold
     lowThreshold = preferences.getUInt("lower", 1000); //Lower IR threshold
     afterZipDelay = preferences.getFloat("zDelay", 10);  //Delay after the zipping state
     uprightError = preferences.getFloat("uError", 1.5);  //Delay after the zipping state
     gpsError = preferences.getFloat("gpsError", 3);  //Delay after the zipping state
-    motorMaxSpeedStr = String(motorsMaxSpeed);
+    motorMaxSpeedStr = String(map(motorsMaxSpeed, MOTORINITSPEED, 255, 0, 100));
     afterZipDelayStr = String(afterZipDelay);
     lowThresholdStr = String(lowThreshold);
     highThresholdStr = String(highThreshold);
     uprightErrorStr = String(uprightError);
     gpsErrorStr = String(gpsError);
-    WiFi.mode(WIFI_AP_STA);
+    WiFi.mode(WIFI_AP);
     WiFi.softAP(ssid, password);
+    //WiFi.begin();
+    
+    ElegantOTA.begin(&server);    // Start ElegantOTA    server.begin();
     server.begin();
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
     initSPIFFS();
     delay(3000);
 
@@ -126,9 +132,9 @@ void serverSetup(){
         // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
         if (request->hasParam("value")) {
         motorMaxSpeedStr = request->getParam("value")->value();
-        motorsMaxSpeed = motorMaxSpeedStr.toInt();
+        motorsMaxSpeed = map(motorMaxSpeedStr.toInt(), 0, 100, MOTORINITSPEED, 255);
         logger.log("Max speed in now: ", true);
-        logger.log(motorMaxSpeedStr);
+        logger.log(motorsMaxSpeed);
         }
         request->send(200, "text/plain", "OK");
     });
@@ -192,6 +198,11 @@ void serverSetup(){
             state = READY;
         }
         request->send(SPIFFS, "/index.html", String(), false, processor);
+    
+    });
+
+    server.on("/zipStats", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(SPIFFS, "/zipStats.html", String(), false, processor);
     });
 
     server.on("/logclick", HTTP_GET, [](AsyncWebServerRequest *request){

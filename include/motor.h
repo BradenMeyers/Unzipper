@@ -1,16 +1,16 @@
-#ifndef motor
-#define motor
+#ifndef electrom
+#define electrom
 
 #include <Arduino.h>
 
-#define OFFPOS 1500
-#define SERVODELAY 200      //amazon specs said 150 miliseconds for 60 degrees at 5V and 130 at 6.8V
+#define OFFPOS 0
+#define MOTORINITSPEED 60  //TODO: Make sure this is right start and that motor max speed can't be less than this
 
+void motorSetup();
 
-void motorSetup(int pin);
+void turnOnMotor(int speed);
 
-void writeServo(int value);
+void halfSpeedMotor();
 
-void writeMicroseconds(int value);
 
 #endif
