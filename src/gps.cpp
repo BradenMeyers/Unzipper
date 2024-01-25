@@ -149,6 +149,7 @@ void resetGPShome(){
       attempts++;
       if(attempts >=5){
         logger.log("unable to read a stable GPS position with that GPS Error Margin");
+        success = true;
         return;
       }
     }
@@ -165,7 +166,6 @@ void resetGPShome(){
 int satelliteLock(){
   return int(gps.satellites.value());
 }
-
 
 void setupGPS(){
   Serial.begin(115200);
