@@ -17,10 +17,13 @@ Timer recoveryTimer;
 Timer atTheTopTimer;
 Timer readyTimeOutTimer;
 Timer handleBarTimer;
+Timer returnButtonTimer;
 Timer stallTimer;
 
 byte buzzer = 27;
 byte handleBarSensor = 33;  //TODO: New hall effect swtich i think i did that
+byte returnToHomeButton = 18;
+bool autonomousReturn = true;
 
 #define RECOVERY_TO_READY_AFTER_BEEN_GRABBED_TIME 1700
 
@@ -70,6 +73,10 @@ void backgroundProcesses(){
   // Serial.println("processing");
 }
 
+void changeAutonomy(bool newSetting){
+  autonomousReturn = newSetting;
+}
+
 bool someoneOn(int timeLimit){
   backgroundProcesses();
   static byte handleBarSensorValue = 1;
@@ -81,6 +88,22 @@ bool someoneOn(int timeLimit){
   else{handleBarTimer.start();}
 
   if(handleBarSensorValue){return false;}  //adjust handlebar to be opposite with the pullup
+  return true;
+}
+
+bool returnPushed(int timeLimit){
+  //Returns a true if the button has been pushed for more than timeLimit
+  //Returns a false otherwise
+  static byte returnbuttonValue = 1;
+  if(digitalRead(returnToHomeButton) == 0){
+    if(returnButtonTimer.getTime() > timeLimit){
+      returnbuttonValue = 0;
+    }
+  }
+  else{returnButtonTimer.start();}
+
+  if(returnbuttonValue){return false;}  //adjust handlebar to be opposite with the pullup
+  returnbuttonValue = 1;
   return true;
 }
 
@@ -105,6 +128,11 @@ void readyAtTheTop(){
   readyTimeOutTimer.start();
   while(!someoneOn(1000)){
     backgroundProcesses();
+    if(returnPushed(500)){
+      state = RECOVERY;
+      logger.log("Recovery button pushed", true);
+      return;
+    }
     if(wifiSkipToRecovery){
       state = RECOVERY;
       wifiSkipToRecovery = false;
@@ -133,7 +161,12 @@ void movingDown(){
     }
   }
   stopCount();
-  state = RECOVERY;
+  if(autonomousReturn){
+    state = RECOVERY;
+  }
+  else{
+    state = READY;
+  }
 }
 
 bool initialEscapeRecovery(){     //Escape recovery before motor turns on
@@ -176,8 +209,8 @@ void moveToTop(){     //TODO: THis is where the work needs to be done order and 
   digitalWrite(buzzer, HIGH);     //
   // atTheTop = false;
   recoveryTimer.start();
-  while(!checkStable(1000)){ 
-    if(recoveryTimer.getTime() > 10000) 
+  while(!checkStable(500)){ 
+    if(recoveryTimer.getTime() > 10000) //TODO: make sure this works
       break;
     backgroundProcesses();
   }
@@ -231,6 +264,7 @@ void setup(){
   Serial.begin(112500);
   serverSetup();
   analogReadResolution(12);
+  pinMode(returnToHomeButton, INPUT_PULLUP);
   pinMode(handleBarSensor, INPUT_PULLUP);
   pinMode(buzzer, OUTPUT);
   //remoteSetup();   //TODO: Eventually fix the remote

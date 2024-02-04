@@ -1,4 +1,5 @@
-<!DOCTYPE HTML><html>
+<!DOCTYPE HTML>
+<html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zip Line Controls</title>
@@ -9,19 +10,48 @@
     body {max-width: 400px; margin:0px auto; padding-bottom: 25px;}
     .clear_button{background-color: #c76f12; border: none; color: black; padding: 16px 40px; border-radius: 8px;}
     .back_button{background-color: #2aa2d1; border: none; color: black; padding: 16px 40px; border-radius: 8px;}
+    .auto_button{border: none; padding: 16px 40px; border-radius: 8px;}
+    .auto_button_on{background-color: #2aa2d1; color: black;}
+    .auto_button_off{background-color: #c76f12; color: black;}
   </style>
 </head>
-<body>
+<body onload="checkAutoMode()">
   <h2>Log</h2>
-  <p><button id="clear_button" class="button clear_button" onclick="buttonClickSend(this);">Clear Log</button></p>
+  <p><button id="clear_button" class="button clear_button" onclick="buttonClickSend('/clearlog');">Clear Log</button></p>
   <p><button id="back_button" class="button back_button" onclick="location.href = '/back';">Back</button></p>
+  <p>Autonomous Return: <span id="auto_state"></span></p>
+  <p><button id="auto_button" class="button auto_button auto_button_off" onclick="toggleAuto();">Toggle Auto</button></p>
   <p>%LOGSTRING%</p>
 
   <script>
-    function buttonClickSend(element){
+    var autoState = false;
+
+    function checkAutoMode() {
+      var autoModeElement = document.getElementById('auto_state');
+      var autoModeValue = autoModeElement.textContent.trim();
+      autoState = autoModeValue === %AUTOMODE%;
+      updateAutoState();
+    }
+
+    function buttonClickSend(url){
       var xhr = new XMLHttpRequest();
-      if(element.id == "clear_button"){xhr.open("GET", "/clearlog")}
+      xhr.open("GET", url);
       xhr.send();
+    }
+
+    function toggleAuto() {
+      autoState = !autoState;
+      updateAutoState();
+      var url = autoState ? '/autoOFF' : '/autoON';
+      buttonClickSend(url);
+    }
+
+    function updateAutoState() {
+      var autoStateElement = document.getElementById('auto_state');
+      var autoButton = document.getElementById('auto_button');
+    
+      autoStateElement.textContent = autoState ? 'ON' : 'OFF';
+      autoButton.className = 'button auto_button ' + (autoState ? 'auto_button_on' : 'auto_button_off');
     }
   </script>
 </body>

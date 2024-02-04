@@ -10,6 +10,7 @@
 #include <odometer.h>
 #include <gps.h>
 #include <motor.h>
+#include <main.h>
 
 Blogger logger;
 
@@ -52,6 +53,7 @@ String uprightErrorStr = String(uprightError);
 String gpsErrorStr = String(gpsError);
 bool wifiStopMotor = false;
 bool wifiSkipToRecovery = false;
+bool autonomousMode = true; 
 
 AsyncWebServer server(80);
 
@@ -62,6 +64,15 @@ float batteryVoltage(){
     float alpha = 0.8;
     voltage = voltage*alpha + (1-alpha)*reading;
     return voltage;
+}
+
+
+//TODO: Really Cut down the time and figure out this processor thing. dont always send strings and
+//try out some new things. 
+String logPageProcessor(const String& var){
+    if(var == "AUTOMODE"){return String(autonomousMode);}
+    else if(var == "LOGSTRING"){return logger.logStr.c_str();}
+    return String();
 }
 
 // Replaces placeholder with button section in your web page
@@ -76,7 +87,6 @@ String processor(const String& var){
   else if(var == "UPRIGHTERROR"){return String(uprightError);}
   else if(var == "VOLTAGE") return String(batteryVoltage());
   else if(var == "TEMPERATURE") return String(getTemperature());
-  else if(var == "LOGSTRING"){return logger.logStr.c_str();}
   else if(var == "TESTLOG"){return testLogger.logStr.c_str();}
   else if(var == "SATLOCK"){return String(satelliteLock());}
   else if(var == "GPSERROR"){return String(gpsError);}
@@ -89,7 +99,9 @@ void storeValues(){
     preferences.putUInt("max", motorsMaxSpeed);
     preferences.putFloat("zDelay", afterZipDelay);
     preferences.putFloat("uError", uprightError);
+    preferences.putFloat("automode", autonomousMode);
     preferences.putFloat("gpsError", gpsError);
+
 }
 
 void initSPIFFS() {
@@ -107,6 +119,7 @@ void serverSetup(){
     afterZipDelay = preferences.getFloat("zDelay", 10);  //Delay after the zipping state
     uprightError = preferences.getFloat("uError", 1.5);  //Delay after the zipping state
     gpsError = preferences.getFloat("gpsError", 3);  //Delay after the zipping state
+    autonomousMode = preferences.getBool("automode", true);
     motorMaxSpeedStr = String(map(motorsMaxSpeed, MOTORINITSPEED, 255, 0, 100));
     afterZipDelayStr = String(afterZipDelay);
     lowThresholdStr = String(lowThreshold);
@@ -206,13 +219,25 @@ void serverSetup(){
     });
 
     server.on("/logclick", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(SPIFFS, "/logger.html", String(), false, processor);
+        request->send(SPIFFS, "/logger.html", String(), false, logPageProcessor);
     });
 
+    server.on("/autoOFF", HTTP_GET, [](AsyncWebServerRequest *request){
+        changeAutonomy(false);
+        autonomousMode = false;
+        logger.log("Autonomous Mode Off", true);
+        request->send(SPIFFS, "/logger.html", String(), false, logPageProcessor);
+    });
+    server.on("/autoON", HTTP_GET, [](AsyncWebServerRequest *request){
+        changeAutonomy(true);
+        autonomousMode = true;
+        logger.log("Autonomous Mode On", true);
+        request->send(SPIFFS, "/logger.html", String(), false, logPageProcessor);
+    });
     server.on("/clearlog", HTTP_GET, [](AsyncWebServerRequest *request){
         logger.clearLog();
         Serial.println("CLEARING LOG----");
-        request->send(SPIFFS, "/logger.html", String(), false, processor);
+        request->send(SPIFFS, "/logger.html", String(), false, logPageProcessor);
     });
 
     server.on("/disableMainHE", HTTP_GET, [](AsyncWebServerRequest *request){
