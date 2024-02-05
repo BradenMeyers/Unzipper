@@ -11,5 +11,7 @@
 
 void turnOnMotor(int speed);
 
+void changeAutonomy(bool newSetting);
+
 
 #endif

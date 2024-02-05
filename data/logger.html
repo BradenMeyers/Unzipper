@@ -1,4 +1,5 @@
-<!DOCTYPE HTML><html>
+<!DOCTYPE HTML>
+<html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zip Line Controls</title>
@@ -7,22 +8,66 @@
     h2 {font-size: 1.4rem;}
     p {font-size: 1rem;}
     body {max-width: 400px; margin:0px auto; padding-bottom: 25px;}
+    a:hover {color: black;}
     .clear_button{background-color: #c76f12; border: none; color: black; padding: 16px 40px; border-radius: 8px;}
     .back_button{background-color: #2aa2d1; border: none; color: black; padding: 16px 40px; border-radius: 8px;}
+    .auto_button{border: none; padding: 16px 40px; border-radius: 8px;}
+    .auto_button_on{background-color: #2aa2d1; color: black;}
+    .auto_button_off{background-color: #c76f12; color: black;}
   </style>
 </head>
 <body>
   <h2>Log</h2>
-  <p><button id="clear_button" class="button clear_button" onclick="buttonClickSend(this);">Clear Log</button></p>
+  <p><a id="update_code" class="update_link" href="/update">Firmware Update</a></p>
+  <p><button id="clear_button" class="button clear_button" onclick="buttonClickSend('/clearlog');">Clear Log</button></p>
   <p><button id="back_button" class="button back_button" onclick="location.href = '/back';">Back</button></p>
+  <p>Autonomous Return: <span id="auto_state"></span></p>
+  <p><button id="auto_button" class="button auto_button" onclick="toggleAuto();">Toggle Auto</button></p>
   <p>%LOGSTRING%</p>
 
   <script>
-    function buttonClickSend(element){
-      var xhr = new XMLHttpRequest();
-      if(element.id == "clear_button"){xhr.open("GET", "/clearlog")}
-      xhr.send();
+    var autoState = false;
+
+    function checkAutoMode() {
+      var autoModeValue = %AUTOMODE%;
+      
+      if (autoModeValue == '1' || autoModeValue == '0') {
+        autoState = autoModeValue == '1';
+      }// else {
+        // Handle the case when %AUTOMODE% is not '1' or '0'
+        //autoState = false; // Set a default state, you can modify this according to your needs
+      //}
+
+      updateAutoState();
     }
+
+    async function buttonClickSend(url){
+      try {
+        const response = await fetch(url, { method: 'GET' });
+        // You can handle the response if needed
+        console.log(response);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    }
+
+    function toggleAuto() {
+      autoState = !autoState;
+      updateAutoState();
+      var url = autoState ? '/autoON' : '/autoOFF';
+      buttonClickSend(url);
+    }
+
+    function updateAutoState() {
+      var autoStateElement = document.getElementById('auto_state');
+      var autoButton = document.getElementById('auto_button');
+    
+      autoStateElement.textContent = autoState ? 'ON' : 'OFF';
+      autoButton.className = 'button auto_button ' + (autoState ? 'auto_button_on' : 'auto_button_off');
+    }
+
+    window.onload = checkAutoMode();
+    window.onload = updateAutoState();
   </script>
 </body>
 </html>

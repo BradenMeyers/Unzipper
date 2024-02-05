@@ -174,10 +174,12 @@ void setupGPS(){
 
 void loopGPS(){
   // This sketch displays information every time a new sentence is correctly encoded.
+  //logger.log("gps Looping",true);
   while (ss.available() > 0){
+    //logger.log("Serial available", true);
     gps.encode(ss.read());
     if (gps.location.isUpdated()){
-
+      // logger.log("gps reading", true);
       // Serial.print("Latitude= "); 
       // Serial.print(gps.location.lat(), 6);
       // Serial.print(" Longitude= "); 
