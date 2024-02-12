@@ -2,52 +2,140 @@
 <html>
 <head>
     <style>
-        html {font-family: Arial; display: inline-block; text-align: center;}
-        h2 {font-size: 1.4rem;}
-        p {font-size: 1rem;}
-        body {max-width: 400px; margin:0px auto; padding-bottom: 25px;}
-       .button {
-            display: inline-block;
-            margin: 10px;
-            padding: 20px 40px;
-            border: none;
-            border-radius: 5px;
-            font-size: 18px;
-            color: #fff;
-            cursor: pointer;
-        }
+    html {
+        font-family: Arial;
+        display: inline-block;
+        text-align: center;
+    }
+    
+    h2 {font-size: 1.4rem;}
+    
+    p {font-size: 1rem;}
+    
+    body {
+        max-width: 400px;
+        margin:0px auto;
+        padding-bottom: 25px;
+    }
+    
+    a {color: #0000EE;}
+    
+    a:hover {color: black;}
+    
+    button {
+      align-items: center;
+      appearance: none;
+      background-color: #2aa2d1;
+      background-size: calc(100% + 20px) calc(100% + 20px);
+      border-radius: 100px;
+      border-width: 0;
+      box-shadow: none;
+      box-sizing: border-box;
+      color: #FFFFFF;
+      cursor: pointer;
+      display: inline-flex;
+      font-family: CircularStd,sans-serif;
+      font-size: 1rem;
+      height: auto;
+      justify-content: center;
+      line-height: 1.5;
+      padding: 6px 20px;
+      position: relative;
+      text-align: center;
+      text-decoration: none;
+      transition: background-color .2s,background-position .2s;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+    
+    button:active,
+    button:focus {
+      outline: none;
+    }
+    
+    button:hover {
+      background-position: -20px -20px;
+      color: white;
+    }
+    
+    button:focus:not(:active) {
+      box-shadow: rgba(40, 170, 255, 0.25) 0 0 0 .125em;
+    }
+    
+    button.motor {
+        background-color: #ff0000;
+        border: none; color: black;
+        padding: 16px 40px;
+        border-radius: 8px;
+        background-image: linear-gradient(1deg, #d80c0c, #f25d3d 99%);
+    }
+    
+    button.accelerometer {
+        background-color: #189cfa;
+        border: none; color: black;
+        padding: 16px 40px;
+        border-radius: 8px;
+        background-image: linear-gradient(1deg, #0987e2, #33aaff 99%);
+    }
+    
+    button.odometer {
+        background-color: #33ff57;
+        border: none; color: black;
+        padding: 16px 40px;
+        border-radius: 8px;
+        background-image: linear-gradient(1deg, #0ecc2f, #29eb4b 99%);
+    }
+    
+    button.servo {
+        background-color: #ff33a6;
+        border: none; color: black;
+        padding: 16px 40px;
+        border-radius: 8px;
+        background-image: linear-gradient(1deg, #d31882, #eb399d 99%);
+    }
         
-        .motor {
-            background-color: #ff5733;
-        }
-        
-        .accelerometer {
-            background-color: #33aaff;
-        }
-        
-        .odometer {
-            background-color: #33ff57;
-        }
-        
-        .servo {
-            background-color: #ff33a6;
-        }
-        
-        .back-button {
-            background-color: #555555;
-            position: fixed;
-            top: 10px;
-            left: 10px;
-
-        }
+    .topnav {
+        background-color: #FFF;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .topnav a {
+        float: left;
+        color: #000;
+        text-align: center;
+        padding: 14px 16px;
+        text-decoration: none;
+        font-size: 17px;
+    }
+    
+    .topnav a:hover {
+        background-color: #ddd;
+        color: black;
+    }
+    
+    .topnav a.active {
+        background-color: #2aa2d1;
+        color: white;
+    }
     </style>
 </head>
 <body>
-    <button id="back" class="button back-button" onclick="location.href = '/back';">Back</button>
-    <button id="motor-button" class="button motor" onclick="location.href = '/motortest';">Motor</button>
-    <button id="accel-button" class="button accelerometer" onclick="location.href = '/acceltest';">Accelerometer</button>
-    <button id="odom-button" class="button odometer" onclick="location.href = '/odomtest';">Odometer</button>
-    <button id="servo-button" class="button servo" onclick="location.href = '/servotest';">Servo</button>
+    <div class="topnav">
+      <a href="/back">Home</a>
+      <a href="/logclick">Log</a>
+      <a href="/odometersettingsclick">Settings</a>
+      <a href="/update">Firmware</a>
+      <a class="active" href="/testclick">Test</a>
+    </div>
+    <p><button id="motor-button" class="button motor" onclick="location.href = '/motortest';">Motor</button></p>
+    <p><button id="accel-button" class="button accelerometer" onclick="location.href = '/acceltest';">Accelerometer</button></p>
+    <p><button id="odom-button" class="button odometer" onclick="location.href = '/odomtest';">Odometer</button></p>
+    <p><button id="servo-button" class="button servo" onclick="location.href = '/servotest';">Servo</button></p>
     <p>Serial Data: </p>
     %TESTLOG%
 
