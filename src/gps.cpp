@@ -3,6 +3,9 @@
 #include <SoftwareSerial.h>
 #include <TinyGPS++.h>
 #include <serverESP.h>
+#include <main.h>
+#include <Preferences.h>
+#include <timer.h>
 
 // The TinyGPS++ object
 TinyGPSPlus gps;
@@ -12,6 +15,95 @@ static const uint32_t GPSBaud = 9600;
 
 // The serial connection to the GPS device
 SoftwareSerial ss(RXPin, TXPin);
+
+Timer dataTimer;
+
+GPSDataRecorder recoveryData("Recov");
+GPSDataRecorder zippingData("Zip");
+
+//put everything in the right units and the right data structure
+
+GPSDataRecorder::GPSDataRecorder(const String& identifier) {
+  storageID = identifier;
+  maxSpeedKey = "MaxSpeed" + storageID;
+  distanceKey = "Distance" + storageID;
+  timeKey = "Time" + storageID;
+
+  lastMaxSpeed = 0.0;
+  maxSpeed = 0.0;
+  ATMaxSpeed = preferences.getFloat(maxSpeedKey.c_str(), 0.0); //All time max speed get from spiffs
+  lastDistance = 0.0;
+  distance = 0.0;
+  ATDistance = preferences.getFloat(distanceKey.c_str(), 0.0);  //all time distance 
+  lastTime = 0;
+  time = 0;
+  ATTime = preferences.getUInt(timeKey.c_str(), 0);   //all combined time 
+  ATAvg = (ATDistance/ATTime) *0.682; //feet/sec to MPH
+
+}
+
+void GPSDataRecorder::recordSpeed(){
+  double currentSpeed = gps.speed.mph();
+  if (currentSpeed > lastMaxSpeed) {
+    lastMaxSpeed = currentSpeed;
+  }
+}
+
+void GPSDataRecorder::startRecord(){
+  lastMaxSpeed = 0.0;
+  dataTimer.start();
+  startingLat = gps.location.lat();
+  startingLong = gps.location.lng();
+
+}
+
+void GPSDataRecorder::endRecord(){
+  lastTime = dataTimer.getTime()/1000;
+
+  lastDistance = gps.distanceBetween(startingLat, startingLong, gps.location.lat(), gps.location.lng());
+  lastDistance *= 3.281; //Meters to feet
+  if(lastMaxSpeed > maxSpeed)
+    maxSpeed = lastMaxSpeed;
+  if(lastMaxSpeed > ATMaxSpeed)
+    ATMaxSpeed = lastMaxSpeed;
+  
+  distance += lastDistance;
+  ATDistance += lastDistance;
+
+  time += lastTime;
+  ATTime += lastTime;
+
+  lastAvg = (lastDistance/lastTime) *0.682; //feet/sec to MPH
+  avg = (distance/time) *0.682; //feet/sec to MPH
+  ATAvg = (ATDistance/ATTime) *0.682; //feet/sec to MPH
+  
+  GPSDataRecorder::storeData();
+}
+
+void GPSDataRecorder::storeData() {
+  preferences.putFloat(maxSpeedKey.c_str(), ATMaxSpeed);
+  preferences.putFloat(distanceKey.c_str(), ATDistance);
+  preferences.putUInt(timeKey.c_str(), ATTime);
+}
+
+void GPSDataRecorder::resetStats(bool last, bool today, bool allTime){
+  if(last){
+    lastMaxSpeed = 0.0;
+    lastDistance = 0.0;
+    lastTime = 0.0;
+  }
+  if(today){
+    maxSpeed = 0.0;
+    distance = 0.0;
+    time = 0.0;
+  }
+  if(allTime){  
+    ATMaxSpeed = 0.0; //All time max speed get from spiffs
+    ATDistance = 0.0;  //all time distance 
+    ATTime = 0.0;   //all combined time 
+  }
+  GPSDataRecorder::storeData();
+}
 
 float gpsError = 3;
 
@@ -136,6 +228,7 @@ double generateGPSLock()
 void resetGPShome(){
   int attempts = 0;
   bool success = false;
+  setBeep(200);
   while(!success){
     logger.log("Attempting to obtain GPS Lock", true);
     double deviation = generateGPSLock();
@@ -144,12 +237,14 @@ void resetGPShome(){
     logger.log(deviation);
     if(deviation <= gpsError){
       success = true;
+      setBeep(400);
     }
     else{
       attempts++;
       if(attempts >=5){
         logger.log("unable to read a stable GPS position with that GPS Error Margin");
         success = true;
+        setBeep(1500);
         return;
       }
     }
@@ -178,23 +273,22 @@ void loopGPS(){
   while (ss.available() > 0){
     //logger.log("Serial available", true);
     gps.encode(ss.read());
-    if (gps.location.isUpdated()){
-      // logger.log("gps reading", true);
-      // Serial.print("Latitude= "); 
-      // Serial.print(gps.location.lat(), 6);
-      // Serial.print(" Longitude= "); 
-      // Serial.println(gps.location.lng(), 6);
-      // // Number of satellites in use (u32) hello
-      // Serial.print("Number of satellites in use = "); 
-      // Serial.println(gps.satellites.value());
-    }
+    // if (gps.location.isUpdated()){
+    //   // logger.log("gps reading", true);
+    //   // Serial.print("Latitude= "); 
+    //   // Serial.print(gps.location.lat(), 6);
+    //   // Serial.print(" Longitude= "); 
+    //   // Serial.println(gps.location.lng(), 6);
+    //   // // Number of satellites in use (u32) hello
+    //   // Serial.print("Number of satellites in use = "); 
+    //   // Serial.println(gps.satellites.value());
+    // }
   }
 }
 
 double getDistanceToEnd(){
   double distanceBetween = gps.distanceBetween(homeLat, homeLng, gps.location.lat(), gps.location.lng());
-  Serial.print(">Distance: ");
-  Serial.println(distanceBetween);
+  // Serial.print(">Distance: ");
+  // Serial.println(distanceBetween);
   return distanceBetween;
 }
-

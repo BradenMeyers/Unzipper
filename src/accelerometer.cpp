@@ -5,6 +5,7 @@
 #include <accelerometer.h>
 #include <testCases.h>
 #include <Preferences.h>
+#include <main.h>
 
 //Preferences accelerometerStore;
 
@@ -142,6 +143,7 @@ void setStable(){
     uprightX = 0;
     uprightY = 0;
     uprightZ = 0;
+    setBeep(200);
     for (int i=0; i< count; i++){
         getAccReadings();
         uprightX += accX;
@@ -152,6 +154,7 @@ void setStable(){
     uprightY = uprightY/count;
     uprightZ = uprightZ/count;
     storeStableValues();
+    setBeep(400);
 }
 
 

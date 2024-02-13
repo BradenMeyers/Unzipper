@@ -105,6 +105,10 @@ bool shouldCheckAtTheTop = true;
 HESensor mainHE(odometerHallEffect);
 HESensor backupHE(odometerHallBackup);
 
+unsigned long getCurrentCount(){
+    return mainHE.beforeRotations - mainHE.rotations;
+}
+
 unsigned long startCount(){
     return mainHE.startIndivCount() + backupHE.startIndivCount();
 }
@@ -154,6 +158,7 @@ void setupOdometer(){
 
 void loopOdometer(){
     mainHE.countRotationsHallEffect();
+
     //backupHE.countRotationsHallEffect();
     //Serial.println("i am here");
 }

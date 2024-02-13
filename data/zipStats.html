@@ -146,54 +146,73 @@
 
   <table class="container">
     <thead>
-      <tr>
-        <th><h1></h1></th>
-        <th><h1>Avg Zip Speed (MPH)</h1></th>
-        <th><h1>Zip Distance (feet)</h1></th>
-        <th><h1>Max Zip Speed (MPH)</h1></th>
-        <th><h1>Zip Time</h1></th>
-        <th><h1>Max Return Speed (MPH)</h1></th>
-        <th><h1>Return Time</h1></th>
-      </tr>
+        <tr>
+            <th><h1></h1></th>
+            <th><h1>Last Zip</h1></th>
+            <th><h1>Today</h1></th>
+            <th><h1>All Time</h1></th>
+        </tr>
     </thead>
     <tbody>
-      <tr>
-        <td>Last Zip</td>
-        <td>35</td>
-        <td>450</td>
-        <td>0:26</td>
-        <td>0:26</td>
-        <td>35</td>
-        <td>1:20</td>
-      </tr>
-       <tr>
-        <td>Today</td>
-        <td>35</td>
-        <td>450</td>
-        <td>0:26</td>
-        <td>0:26</td>
-        <td>35</td>
-        <td>1:20</td>
-      </tr>
-      <tr>
-        <td>All Time</td>
-        <td>35</td>
-        <td>450</td>
-        <td>0:26</td>
-        <td>0:26</td>
-        <td>35</td>
-        <td>1:20</td>
-      </tr>
-      <!-- Add more rows as needed -->
+        <tr>
+            <th><h1>Max Zip Speed (MPH)</h1></th>
+            <td>%lastMaxSpeedZip%</td>
+            <td>%maxSpeedZip%</td>
+            <td>%ATMaxSpeedZip%</td>
+        </tr>
+        <tr>
+            <th><h1>Avg Zip Speed (MPH)</h1></th>
+            <td>%lastAvgZip%</td>
+            <td>%avgZip%</td>
+            <td>%ATavgZip%</td>
+        </tr>
+        <tr>
+            <th><h1>Zip Distance (feet)</h1></th>
+            <td>%lastDistanceZip%</td>
+            <td>%distanceZip%</td>
+            <td>%ATdistanceZip%</td>
+        </tr>
+        <tr>
+            <th><h1>Zip Time (sec)</h1></th>
+            <td>%lastTimeZip%</td>
+            <td>%timeZip%</td>
+            <td>%ATtimeZip%</td>
+        </tr>
+        <tr>
+            <th><h1>Max Return Speed (MPH)</h1></th>
+            <td>%lastMaxSpeedRecov%</td>
+            <td>%maxSpeedRecov%</td>
+            <td>%ATMaxSpeedRecov%</td>
+        </tr>
+        <tr>
+            <th><h1>Return Avg Speed (MPH)</h1></th>
+            <td>%lastAvgRecov%</td>
+            <td>%avgRecov%</td>
+            <td>%ATavgRecov%</td>
+        </tr>
+        <tr>
+            <th><h1>Return Distance (feet)</h1></th>
+            <td>%lastDistanceRecov%</td>
+            <td>%distanceRecov%</td>
+            <td>%ATdistanceRecov%</td>
+        </tr>
+        <tr>
+            <th><h1>Return Time (sec)</h1></th>
+            <td>%lastTimeRecov%</td>
+            <td>%timeRecov%</td>
+            <td>%ATtimeRecov%</td>
+        </tr>
     </tbody>
-  </table>
+</table>
+
 
   <button class="reset-button" onclick="resetStats()">Reset Stats</button>
   <a href="/back" class="back-button">Back</a>
 
   <script>
     function resetStats() {
-      // Add logic to reset stats as needed
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "/resetStats");
       alert('Stats reset!');
     }
   </script>

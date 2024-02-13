@@ -11,6 +11,8 @@ bool isStalled();
 unsigned long startCount();
 unsigned long stopCount();
 
+unsigned long getCurrentCount();
+
 void setupOdometer();
 
 void loopOdometer();

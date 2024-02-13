@@ -69,6 +69,34 @@ float batteryVoltage(){
 
 //TODO: Really Cut down the time and figure out this processor thing. dont always send strings and
 //try out some new things. 
+String zipDataProcessor(const String& var){
+    if(var == "lastMaxSpeedZip"){return String(zippingData.lastMaxSpeed,1);}
+    else if(var == "lastDistanceZip"){return String(zippingData.lastDistance,1);}
+    else if(var == "lastAvgZip"){return String(zippingData.lastAvg,1);}
+    else if(var == "lastTimeZip"){return String(zippingData.lastTime);}
+    else if(var == "maxSpeedZip"){return String(zippingData.maxSpeed,1);}
+    else if(var == "distanceZip"){return String(zippingData.distance,1);}
+    else if(var == "timeZip"){return String(zippingData.time);}
+    else if(var == "avgZip"){return String(zippingData.avg,1);}
+    else if(var == "ATMaxSpeedZip"){return String(zippingData.ATMaxSpeed,1);}
+    else if(var == "ATdistanceZip"){return String(zippingData.ATDistance,1);}
+    else if(var == "ATtimeZip"){return String(zippingData.ATTime);}
+    else if(var == "ATavgZip"){return String(zippingData.ATAvg,1);}
+    else if(var == "lastMaxSpeedRecov"){return String(recoveryData.lastMaxSpeed,1);}
+    else if(var == "lastDistanceRecov"){return String(recoveryData.lastDistance,1);}
+    else if(var == "lastAvgRecov"){return String(recoveryData.lastAvg,1);}
+    else if(var == "lastTimeRecov"){return String(recoveryData.lastTime);}
+    else if(var == "maxSpeedRecov"){return String(recoveryData.maxSpeed,1);}
+    else if(var == "distanceRecov"){return String(recoveryData.distance,1);}
+    else if(var == "timeRecov"){return String(recoveryData.time);}
+    else if(var == "avgRecov"){return String(recoveryData.avg,1);}
+    else if(var == "ATMaxSpeedRecov"){return String(recoveryData.ATMaxSpeed,1);}
+    else if(var == "ATdistanceRecov"){return String(recoveryData.ATDistance,1);}
+    else if(var == "ATtimeRecov"){return String(recoveryData.ATTime);}
+    else if(var == "ATavgRecov"){return String(recoveryData.ATAvg,1);}
+    return String();
+}
+
 String logPageProcessor(const String& var){
     if(var == "AUTOMODE"){return String(autonomousMode);}
     else if(var == "LOGSTRING"){return logger.logStr.c_str();}
@@ -126,6 +154,8 @@ void serverSetup(){
     highThresholdStr = String(highThreshold);
     uprightErrorStr = String(uprightError);
     gpsErrorStr = String(gpsError);
+    
+    //SETUP WIFI CONFIG
     WiFi.mode(WIFI_AP);
     WiFi.softAP(ssid, password);
     //WiFi.begin();
@@ -215,7 +245,7 @@ void serverSetup(){
     });
 
     server.on("/zipStats", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(SPIFFS, "/zipStats.html", String(), false, processor);
+        request->send(SPIFFS, "/zipStats.html", String(), false, zipDataProcessor);
     });
 
     server.on("/logclick", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -253,6 +283,11 @@ void serverSetup(){
     server.on("/resetStable", HTTP_GET, [](AsyncWebServerRequest *request){
         setStable();
         logger.log("Stable reset", true);
+        request->send(SPIFFS, "/odometer.html", String(), false, processor);
+    });
+    server.on("/resetStats", HTTP_GET, [](AsyncWebServerRequest *request){
+        zippingData.resetStats();
+        recoveryData.resetStats();
         request->send(SPIFFS, "/odometer.html", String(), false, processor);
     });
     server.on("/resetGPS", HTTP_GET, [](AsyncWebServerRequest *request){

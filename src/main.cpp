@@ -26,16 +26,22 @@ byte returnToHomeButton = 18;
 bool autonomousReturn = true;
 
 #define RECOVERY_TO_READY_AFTER_BEEN_GRABBED_TIME 1700
+#define MAX_BUTTON_RETURN 3000
+#define MIN_BUTTON_TIME 250
+#define MIN_CALIBRATE 6000
+#define ROTATIONS_BEFORE_ZIP 12
+
 
 static int motorAccelerationTimeLimit = 20;  //this determines how fast the motor increses its speed by one PWM value
 const char* someoneOnLog = "Stopping motor because someone was on";
 const char* wifiStopMotorLog = "Stopping motor because wifi";
+const char* buttonPushedLog = "Stopping motor because button was pushed";
 const char* stalledLog = "Stopping motor because it is stalled";
 
 void ledStateMachine(){
   static byte readyLight = 25;
-  static byte zipLight = 32;
-  static byte recoveryLight = 23;
+  static byte zipLight = 23;
+  static byte recoveryLight = 32;
   static bool initialized = false;
   if (!initialized) {
     initialized = true;
@@ -91,20 +97,35 @@ bool someoneOn(int timeLimit){
   return true;
 }
 
-bool returnPushed(int timeLimit){
-  //Returns a true if the button has been pushed for more than timeLimit
-  //Returns a false otherwise
-  static byte returnbuttonValue = 1;
-  if(digitalRead(returnToHomeButton) == 0){
-    if(returnButtonTimer.getTime() > timeLimit){
-      returnbuttonValue = 0;
-    }
-  }
-  else{returnButtonTimer.start();}
 
-  if(returnbuttonValue){return false;}  //adjust handlebar to be opposite with the pullup
-  returnbuttonValue = 1;
-  return true;
+unsigned long returnPushed(int maxTime){
+  //Returns Time pushed
+  static bool started = false;
+  if(digitalRead(returnToHomeButton) == 0){
+    started = true;
+  }
+  if(started){
+    unsigned long currentTime = returnButtonTimer.getTime();
+    if(digitalRead(returnToHomeButton) == 1){
+      started = false;
+      return currentTime;
+    }
+    else if(currentTime > maxTime){
+      return currentTime;
+    }
+    else
+      return 0;
+  }
+  else{
+    returnButtonTimer.start();
+    return 0;
+  }
+}
+
+void setBeep(int time){
+  digitalWrite(buzzer, HIGH);
+  delay(time);
+  digitalWrite(buzzer, LOW);
 }
 
 void beeper_check(){
@@ -114,7 +135,48 @@ void beeper_check(){
       digitalWrite(buzzer, LOW);
 }
 
+//If time the button has been pushed is within min and max value for RETURN to home function returns true
+//if the time is greater than the calibration time it will call home on GPS and set stable
+bool checkReturnButton(){
+  unsigned long buttonTime = returnPushed(MIN_CALIBRATE);
+  if(buttonTime > MIN_BUTTON_TIME){
+    if(buttonTime < MAX_BUTTON_RETURN){
+      return true;
+    }
+    else if(buttonTime >= MIN_CALIBRATE){
+      //Start calibration sequence
+      
+      //Turn on all the lights and turn on beep the buzzer
+      digitalWrite(32, HIGH);
+      digitalWrite(23, HIGH);
+      logger.log("Reseting GPS Home and Calibrating", true);
+      setBeep(200);
+      resetGPShome();
+      setStable();
+      setBeep(400);
+      digitalWrite(32, LOW);
+      digitalWrite(23, LOW);
+      return false;
+    }
+  }
+  return false;
+}
+
+//If the return button is pressed more than time limit return true otherwise false
+bool checkStopReturn(int timeLimit){
+  if(digitalRead(returnToHomeButton) == 0){
+    if(returnButtonTimer.getTime() > timeLimit){
+      return true;
+    }
+  }
+  else
+    returnButtonTimer.start();
+
+  return false;
+}
+
 void stopTheMotor(){      //TODO: Look at this function and move it to motor.cpp change
+  recoveryData.endRecord();
   turnOnMotor(OFFPOS);
   digitalWrite(buzzer, LOW);
   wifiStopMotor = false;
@@ -128,7 +190,7 @@ void readyAtTheTop(){
   readyTimeOutTimer.start();
   while(!someoneOn(1000)){
     backgroundProcesses();
-    if(returnPushed(500)){
+    if(checkReturnButton()){
       state = RECOVERY;
       logger.log("Recovery button pushed", true);
       return;
@@ -153,14 +215,25 @@ void readyAtTheTop(){
 
 void movingDown(){
   startCount();
+  bool started = false;
   while(someoneOn(1000)){
     loopOdometer();
     beeper_check();
+    
+    //Record speed and start counting distance and time when moving
+    zippingData.recordSpeed();
+    if((getCurrentCount() > ROTATIONS_BEFORE_ZIP) && !started){
+      zippingData.startRecord();
+      started = true;
+    }
+    
     if(state == TEST){
       return;
     }
   }
   stopCount();
+  if(started)
+    zippingData.endRecord();
   if(autonomousReturn){
     state = RECOVERY;
   }
@@ -171,50 +244,61 @@ void movingDown(){
 
 bool initialEscapeRecovery(){     //Escape recovery before motor turns on
   if(wifiStopMotor){
-      wifiStopMotor = false;
-      stopTheMotor();
-      logger.log(wifiStopMotorLog, true);
-      return true;
-    }
-  if(someoneOn(200)){
-      stopTheMotor();
-      logger.log(someoneOnLog, true);
-      return true;
+    wifiStopMotor = false;
+    logger.log(wifiStopMotorLog, true);
   }
-  return false;
+  else if(someoneOn(200)){
+    logger.log(someoneOnLog, true);
+  }
+  else if(checkStopReturn(300)){
+    logger.log(buttonPushedLog, true);
+  }
+  else{
+    return false;
+  }
+
+  stopTheMotor();
+  return true;
 }
 
+//return true if buttons are pushed, or wifi stop, or stall, return false, Runs accelerometer and GPS
 bool escapeRecovery(){   //Escape recovery when motor has turned on
   loopOdometer();  //does this need to be somewhere else? 
-    if(someoneOn(50)){
-      logger.log(someoneOnLog, true);
-      return true;
-    }
-    if(wifiStopMotor){
-      logger.log(wifiStopMotorLog, true);
-      return true;
-    }
-    if((stallTimer.getTime() > 1000)  and isStalled()){
-      logger.log(stalledLog, true);
-      return true;
-    }
-    if(!movingStable()){
-      logger.log("System is unstable while moving", true);
-      return true;
-    }
-  return false;
+  recoveryData.recordSpeed();
+  if(someoneOn(50)){
+    logger.log(someoneOnLog, true);
+  }
+  else if(wifiStopMotor){
+    logger.log(wifiStopMotorLog, true);
+  }
+  else if((stallTimer.getTime() > 1000)  and isStalled()){
+    logger.log(stalledLog, true);
+  }
+  // else if(!movingStable()){
+  //   logger.log("System is unstable while moving", true);
+  // }
+  else
+    return false;
+  
+  return true;
 }
 
 void moveToTop(){     //TODO: THis is where the work needs to be done order and saftey
   digitalWrite(buzzer, HIGH);     //
   // atTheTop = false;
   recoveryTimer.start();
-  while(!checkStable(500)){ 
-    if(recoveryTimer.getTime() > 10000) //TODO: make sure this works
-      break;
-    backgroundProcesses();
-  }
+  // while(!checkStable(500)){ 
+  //   if(recoveryTimer.getTime() > 10000) //TODO: make sure this works
+  //     break;
+  //   if(checkStopReturn(300)){
+  //     stopTheMotor();
+  //     logger.log(buttonPushedLog, true);
+  //     return;
+  //   }
+  //   backgroundProcesses();
+  // }
   recoveryTimer.start();
+  returnButtonTimer.start();
   while(recoveryTimer.getTime() < (afterZipDelay*1000)){  
     if(initialEscapeRecovery())
       return;
@@ -222,6 +306,7 @@ void moveToTop(){     //TODO: THis is where the work needs to be done order and 
   logger.log("Begin speeding motor up", true);
   digitalWrite(buzzer, LOW);  //TODO: Have the beeper pulse when motor is on
   stallTimer.start();
+  recoveryData.startRecord();
   for(int motorSpeed=MOTORINITSPEED; motorSpeed<=motorsMaxSpeed; motorSpeed++){  //TODO: Move this to Motor.cpp
     turnOnMotor(motorSpeed);
     recoveryTimer.start();
@@ -242,8 +327,8 @@ void moveToTop(){     //TODO: THis is where the work needs to be done order and 
       logger.log("half speed activated from remote", true);
     }
     else if(distanceToEnd < 15){
-      //halfSpeedMotor();   //CHange back  for GPS half
-      logger.log("GPS Triggered");
+      halfSpeedMotor();   //uncomment  for GPS half speed
+      // logger.log("GPS Triggered",);
     }
     if(escapeRecovery()){
       break;
@@ -268,16 +353,21 @@ void setup(){
   pinMode(handleBarSensor, INPUT_PULLUP);
   pinMode(buzzer, OUTPUT);
   //remoteSetup();   //TODO: Eventually fix the remote
+  // logger.log("here 1");
   setupAccel();
+  // logger.log("here 2");
   motorSetup();
+  // logger.log("here 3");
   setupOdometer();
+  // logger.log("here 4");
   setupGPS();
+  // logger.log("here 5");
   // Serial.println("i made it here");
 }
 
 void loop(){
   updateVariableStrings();
-  logger.log("Current state : ", true);
+  logger.log("Current state: ", true);
   logger.log(stateStr);
   if(state == READY){readyAtTheTop();}
   else if(state == ZIPPING){movingDown();}
