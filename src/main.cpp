@@ -327,7 +327,7 @@ void moveToTop(){     //TODO: THis is where the work needs to be done order and 
       logger.log("half speed activated from remote", true);
     }
     else if(distanceToEnd < 15){
-      halfSpeedMotor();   //uncomment  for GPS half speed
+      //halfSpeedMotor();   //uncomment  for GPS half speed
       // logger.log("GPS Triggered",);
     }
     if(escapeRecovery()){
