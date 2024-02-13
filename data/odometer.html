@@ -11,14 +11,125 @@
       outline: none; -webkit-transition: .2s; transition: opacity .2s; border-radius: 8px;}
     .slider::-webkit-slider-thumb {-webkit-appearance: none; appearance: none; width: 35px; height: 35px; background: #5dfc4e; cursor: pointer; border-radius: 8px;}
     .slider::-moz-range-thumb { width: 35px; height: 35px; background: #003249; cursor: pointer; border-radius: 8px;}
-    .button1{background-color: #2aa2d1; border: none; color: black; padding: 16px 40px; border-radius: 8px;}
-    .button2{background-color: #069b1c; border: none; color: black; padding: 16px 40px; border-radius: 8px;}
-    .button0{background-color: #f28a0a; border: none; color: black; padding: 16px 40px; border-radius: 8px;}
-    .button3{background-color: #fdf901; border: none; color: black; padding: 16px 40px; border-radius: 8px;}
-    .button4{background-color: #db01fd; border: none; color: black; padding: 16px 40px; border-radius: 8px;}
+    
+    button {
+      align-items: center;
+      appearance: none;
+      background-color: #2aa2d1;
+      background-size: calc(100% + 20px) calc(100% + 20px);
+      border-radius: 100px;
+      border-width: 0;
+      box-shadow: none;
+      box-sizing: border-box;
+      color: #FFFFFF;
+      cursor: pointer;
+      display: inline-flex;
+      font-family: CircularStd,sans-serif;
+      font-size: 1rem;
+      height: auto;
+      justify-content: center;
+      line-height: 1.5;
+      padding: 6px 20px;
+      position: relative;
+      text-align: center;
+      text-decoration: none;
+      transition: background-color .2s,background-position .2s;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+    
+    button:active,
+    button:focus {
+      outline: none;
+    }
+    
+    button:hover {
+      background-position: -20px -20px;
+      color: black;
+    }
+    
+    button:focus:not(:active) {
+      box-shadow: rgba(40, 170, 255, 0.25) 0 0 0 .125em;
+    }
+    
+    button.button0 {
+        background-color: #f28a0a;
+        border: none; color: black;
+        padding: 16px 40px;
+        border-radius: 8px;
+        background-image: linear-gradient(1deg, #e27d02, #f8961d 99%);
+    }
+    
+    button.button1 {
+        background-color: #2aa2d1;
+        border: none; color: black;
+        padding: 16px 40px;
+        border-radius: 8px;
+        background-image: linear-gradient(1deg, #188fbd, #40b9e8 99%);
+    }
+    
+    button.button2 {
+        background-color: #069b1c;
+        border: none; color: black;
+        padding: 16px 40px;
+        border-radius: 8px;
+        background-image: linear-gradient(1deg, #058d19, #16a52b 99%);
+    }
+    
+    button.button3 {
+        background-color: #fdf901;
+        border: none; color: black;
+        padding: 16px 40px;
+        border-radius: 8px;
+        background-image: linear-gradient(1deg, #e5e104, #faf61e 99%);
+    }
+    
+    button.button4 {
+        background-color: #db01fd;
+        border: none; color: black;
+        padding: 16px 40px;
+        border-radius: 8px;
+        background-image: linear-gradient(1deg, #bd05da, #dc33f7 99%);
+    }
+    
+    .topnav {
+        background-color: #FFF;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .topnav a {
+        float: left;
+        color: #000;
+        text-align: center;
+        padding: 14px 16px;
+        text-decoration: none;
+        font-size: 17px;
+    }
+    
+    .topnav a:hover {
+        background-color: #ddd;
+        color: black;
+    }
+    
+    .topnav a.active {
+        background-color: #2aa2d1;
+        color: white;
+    }
   </style>
 </head>
 <body>
+    <div class="topnav">
+      <a href="/back">Home</a>
+      <a href="/logclick">Log</a>
+      <a class="active" href="/odometersettingsclick">Settings</a>
+      <a href="/update">Firmware</a>
+      <a href="/testclick">Test</a>
+    </div>
   <h2>Odometer Settings</h2>
   <p><button id="button0" class="button button0" onclick="location.href = '/disableMainHE';">Disable Main Odometer</button></p>
   <p><button id="button3" class="button button3" onclick="location.href = '/disablebackupHE';">Disable Backup Odometer</button></p>
