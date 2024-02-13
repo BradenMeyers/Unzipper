@@ -49,11 +49,15 @@ int ticksToUs(int ticks)
 */
 
 void turnOnMotor(int speed){
-  if(directionStr == "DOWN")
-    digitalWrite(MOTORDIR, HIGH);
-  else
-    digitalWrite(MOTORDIR, LOW);
-    ledcWrite(motorChannel, speed);
+  if(directionStr == "DOWN"){
+    digitalWrite(PWM2, HIGH);
+    digitalWrite(PWM1,LOW);
+  }
+  else{
+    digitalWrite(PWM2, LOW);
+    digitalWrite(PWM1,HIGH);
+    }
+  ledcWrite(motorChannel, speed);
   /* if(batteryVoltage()< 16.50  && speed != 0){ 
     speed = speed + 10;
     mainlog.log("motor speed increase due to low battery voltage", true);
@@ -69,12 +73,14 @@ void halfSpeedMotor(){
 }
 
 void motorSetup(){
-    pinMode(MOTORDIR, OUTPUT);
-    pinMode(MOTORPIN, OUTPUT);
-    digitalWrite(MOTORDIR, LOW);
-    digitalWrite(MOTORPIN, LOW);
+    pinMode(PWM1, OUTPUT);
+    pinMode(PWM2, OUTPUT);
+    pinMode(ENA, OUTPUT);
+    digitalWrite(PWM1, HIGH);
+    digitalWrite(ENA, LOW);
+    digitalWrite(PWM2, LOW);
     ledcSetup(motorChannel,freq, resolution);
-    ledcAttachPin(MOTORPIN, motorChannel);
+    ledcAttachPin(ENA, motorChannel);
     turnOnMotor(OFFPOS);
     // Serial.println("Servo setup");
     // delay(100);
